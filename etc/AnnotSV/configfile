@@ -57,13 +57,13 @@ Samples_ID                      *
 Annotation_mode                 *
 
 # Genes annotations:
-CytoBand			
+# CytoBand			
 Gene_name                       *
 Closest_left
 Closest_right
 Gene_count                      *
 Tx                              *
-Tx_version
+# Tx_version
 Tx_start                        *
 Tx_end                          *
 Overlapped_tx_length            *
@@ -140,22 +140,22 @@ Cosmic_ID			*
 Cosmic_mut_typ			*
 
 # Breakpoints annotations
-TAD_coordinate
-ENCODE_experiment
-GC_content_left
-GC_content_right
-Repeat_coord_left
-Repeat_type_left
-Repeat_coord_right
-Repeat_type_right
-Gap_left
-Gap_right
-SegDup_left
-SegDup_right
-ENCODE_blacklist_left
-ENCODE_blacklist_characteristics_left
-ENCODE_blacklist_right
-ENCODE_blacklist_characteristics_right
+# TAD_coordinate
+# ENCODE_experiment
+# GC_content_left
+# GC_content_right
+# Repeat_coord_left
+# Repeat_type_left
+# Repeat_coord_right
+# Repeat_type_right
+# Gap_left
+# Gap_right
+# SegDup_left
+# SegDup_right
+# ENCODE_blacklist_left
+# ENCODE_blacklist_characteristics_left
+# ENCODE_blacklist_right
+# ENCODE_blacklist_characteristics_right
 
 # Gene-based annotations:
 ACMG
@@ -172,13 +172,13 @@ DDD_consequence
 DDD_disease
 DDD_pmid
 DDD_HI_percent					*
-ExAC_synZ
-ExAC_misZ
-ExAC_delZ
-ExAC_dupZ
-ExAC_cnvZ
+# ExAC_synZ
+# ExAC_misZ
+# ExAC_delZ
+# ExAC_dupZ
+# ExAC_cnvZ
 LOEUF_bin						*
-ExAC_pLI                        
+# ExAC_pLI                        
 GnomAD_pLI                      *
 OMIM_morbid                     *
 OMIM_morbid_candidate           
@@ -191,8 +191,8 @@ PhenoGenius_phenotype
 PhenoGenius_specificity         *
 Exomiser_gene_pheno_scorea      *
 Human_pheno_evidence
-Mouse_pheno_evidence
-Fish_pheno_evidence
+# Mouse_pheno_evidence
+# Fish_pheno_evidence
 
 # Ranking:
 AnnotSV_ranking_score           *
