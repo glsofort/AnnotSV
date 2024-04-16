@@ -175,7 +175,7 @@ proc checkClinVar_PathogenicFile {genomeBuild} {
             # - “criteria_provided”, “_multiple_submitters” or “reviewed_by_expert_panel” SV review status (CLNREVSTAT)
             # - "Deletion" or "Duplication" or "Insertion" or "Inversion" SV type (CLNVC)
             # - ≥ $g_AnnotSV(SVminSize) bp in size (default 50)
-            if {![regexp "ALLELEID=(\[^;\]+)?;.*CLNDISDB=(\[^;\]+)?;.*CLNDN\[INCL\]*=(\[^;\]+)?;.*CLNREVSTAT=(\[^;\]+)?;.*CLNSIG=Pathogenic.*?CLNVC=(\[^;\]+)?" $infos match ALLELEID CLNDISDB CLNDN CLNREVSTAT CLNVC CLNSIG]} {continue}
+            if {![regexp "ALLELEID=(\[^;\]+)?;.*CLNDISDB=(\[^;\]+)?;.*CLNDN\[INCL\]*=(\[^;\]+)?;.*CLNREVSTAT=(\[^;\]+)?;.*CLNSIG=Pathogenic.*?CLNVC=(\[^;\]+)?" $infos match ALLELEID CLNDISDB CLNDN CLNREVSTAT CLNVC]} {continue}
             if {![regexp "criteria_provided|_multiple_submitters|reviewed_by_expert_panel" $CLNREVSTAT]} {continue}
             if {[regexp "no_assertion_criteria_provided" $CLNREVSTAT]} {continue}
             
@@ -199,7 +199,7 @@ proc checkClinVar_PathogenicFile {genomeBuild} {
                 set i [lindex $indices 1]
             }
             regsub "(\\\|)?not_provided" $CLNDN "" CLNDN
-            set toWrite "$chrom\t$start\t$end\t$CLNDN\t$L_HPO\tCLN:$ALLELEID:$CLNREVSTAT:$CLNSIG\t$coord"
+            set toWrite "$chrom\t$start\t$end\t$CLNDN\t$L_HPO\tCLN:$ALLELEID:$CLNREVSTAT\t$coord"
             if {$CLNVC eq "Deletion"} {
                 lappend L_toWriteLoss "$toWrite"
             } elseif {$CLNVC eq "Duplication"} {
