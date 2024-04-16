@@ -199,7 +199,7 @@ proc checkClinVar_PathogenicFile {genomeBuild} {
                 set i [lindex $indices 1]
             }
             regsub "(\\\|)?not_provided" $CLNDN "" CLNDN
-            set toWrite "$chrom\t$start\t$end\t$CLNDN\t$L_HPO\tCLN:$ALLELEID\t$coord"
+            set toWrite "$chrom\t$start\t$end\t$CLNDN\t$L_HPO\tCLN:$ALLELEID:$CLNREVSTAT\t$coord"
             if {$CLNVC eq "Deletion"} {
                 lappend L_toWriteLoss "$toWrite"
             } elseif {$CLNVC eq "Duplication"} {
