@@ -191,23 +191,23 @@ proc checkClinVar_PathogenicFile {genomeBuild} {
             set coord "${chrom}:${start}-$end"
 
             # Add goldstars
-            set gs = 0
+            set gs 0
             if { $CLNREVSTAT eq "reviewed_by_expert_panel" } {
-                set gs = 3
+                set gs 3
             } elseif { $CLNREVSTAT eq "criteria_provided,_multiple_submitters,_no_conflicts" } {
-                set gs = 2
+                set gs 2
             } elseif { $CLNREVSTAT eq "criteria_provided,_single_submitter" } {
-                set gs = 1
+                set gs 1
             }
 
             # Add clnsig short
-            set clnsigs = "."
+            set clnsigs "."
             if { $CLNSIG eq "Pathogenic" } {
-                set clnsigs = "PAT"
+                set clnsigs "PAT"
             } elseif { $CLNSIG eq "Pathogenic/Likely_pathogenic" } {
-                set clnsigs = "PAT/LP"
+                set clnsigs "PAT/LP"
             } elseif { $CLNSIG eq "Pathogenic/Likely_risk_allele" } {
-                set clnsigs = "PAT/LRA"
+                set clnsigs "PAT/LRA"
             }
 
 
