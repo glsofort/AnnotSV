@@ -175,10 +175,12 @@ proc checkClinVar_PathogenicFile {genomeBuild} {
             # - “criteria_provided”, “_multiple_submitters” or “reviewed_by_expert_panel” SV review status (CLNREVSTAT)
             # - "Deletion" or "Duplication" or "Insertion" or "Inversion" SV type (CLNVC)
             # - ≥ $g_AnnotSV(SVminSize) bp in size (default 50)
-            if {![regexp "ALLELEID=(\[^;\]+)?;.*CLNDISDB=(\[^;\]+)?;.*CLNDN\[INCL\]*=(\[^;\]+)?;.*CLNREVSTAT=(\[^;\]+)?;.*CLNSIG=Pathogenic.*?;.*CLNVC=(\[^;\]+)?" $infos match ALLELEID CLNDISDB CLNDN CLNREVSTAT CLNSIG CLNVC]} {continue}
+            if {![regexp "ALLELEID=(\[^;\]+)?;.*CLNDISDB=(\[^;\]+)?;.*CLNDN\[INCL\]*=(\[^;\]+)?;.*CLNREVSTAT=(\[^;\]+)?;.*CLNSIG=Pathogenic.*?CLNVC=(\[^;\]+)?" $infos match ALLELEID CLNDISDB CLNDN CLNREVSTAT CLNSIG CLNVC]} {continue}
             if {![regexp "criteria_provided|_multiple_submitters|reviewed_by_expert_panel" $CLNREVSTAT]} {continue}
             if {[regexp "no_assertion_criteria_provided" $CLNREVSTAT]} {continue}
             
+            if {[regexp "CLNSIG=(\[^;\]+)" $infos match CLNSIG]} {}
+
             set ref [lindex $Ls 3]
             set alt [lindex $Ls 4]
             set SVlength [expr {abs([string length $ref]-[string length $alt])+1}]
