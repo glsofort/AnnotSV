@@ -189,7 +189,28 @@ proc checkClinVar_PathogenicFile {genomeBuild} {
             set start [lindex $Ls 1]
             set end [expr {$start+$SVlength}]
             set coord "${chrom}:${start}-$end"
-            
+
+            # Add goldstars
+            set gs = 0
+            if { $CLNREVSTAT eq "reviewed_by_expert_panel" } {
+                set gs = 3
+            } elseif { $CLNREVSTAT eq "criteria_provided,_multiple_submitters,_no_conflicts" } {
+                set gs = 2
+            } elseif { $CLNREVSTAT eq "criteria_provided,_single_submitter" } {
+                set gs = 1
+            }
+
+            # Add clnsig short
+            set clnsigs = "."
+            if { $CLNSIG eq "Pathogenic" } {
+                set clnsigs = "PAT"
+            } elseif { $CLNSIG eq "Pathogenic/Likely_pathogenic" } {
+                set clnsigs = "PAT/LP"
+            } elseif { $CLNSIG eq "Pathogenic/Likely_risk_allele" } {
+                set clnsigs = "PAT/LRA"
+            }
+
+
             # CLNDISDB example :
             # Human_Phenotype_Ontology:HP:0000556,Human_Phenotype_Ontology:HP:0007736,Human_Phenotype_Ontology:HP:0007910,Human_Phenotype_Ontology:HP:0007974,Human_Phenotype_Ontology:HP:0007982,MONDO:MONDO:0019118,MeSH:D058499,MedGen:C0854723,Orphanet:ORPHA71862,SNOMED_CT:314407005|MONDO:MONDO:0012056,MedGen:C1837873,OMIM:608553|MedGen:CN517202
             set L_HPO {}
@@ -201,7 +222,7 @@ proc checkClinVar_PathogenicFile {genomeBuild} {
                 set i [lindex $indices 1]
             }
             regsub "(\\\|)?not_provided" $CLNDN "" CLNDN
-            set toWrite "$chrom\t$start\t$end\t$CLNDN\t$L_HPO\tCLN:$ALLELEID:$CLNREVSTAT:$CLNSIG\t$coord"
+            set toWrite "$chrom\t$start\t$end\t$CLNDN\t$L_HPO\tCLN:$ALLELEID:$gs:$clnsigs\t$coord"
             if {$CLNVC eq "Deletion"} {
                 lappend L_toWriteLoss "$toWrite"
             } elseif {$CLNVC eq "Duplication"} {
