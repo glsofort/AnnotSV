@@ -316,11 +316,11 @@ proc checkClinGenHITS_pathogenicFile {genomeBuild} {
         if {$hi eq "3"} {
             # Phenotype is only available for Gene ID (not for ISCA region)
             set phenotype [fromOMIMgeneToPhenotype $ID]
-            lappend L_toWriteLoss "$chrom\t$start\t$end\t$phenotype\t$hpo\tHI3:$ID:$ts\t$coord"
+            lappend L_toWriteLoss "$chrom\t$start\t$end\t$phenotype\t$hpo\tHI3:$ID:$ts:$ID\t$coord"
         }
         if {$ts eq "3"} {
             set phenotype [fromOMIMgeneToPhenotype $ID]
-            lappend L_toWriteGain "$chrom\t$start\t$end\t$phenotype\t$hpo\tTS3:$ID:$hi\t$coord"
+            lappend L_toWriteGain "$chrom\t$start\t$end\t$phenotype\t$hpo\tTS3:$ID:$hi:$ID\t$coord"
         }
     }
     close $f
@@ -360,11 +360,11 @@ proc checkClinGenHITS_pathogenicFile {genomeBuild} {
         if {$hi eq "3"} {
             # Phenotype is only available for Gene ID (not for ISCA region)
             set phenotype "$iscaRegionName"
-            lappend L_toWriteLoss "$chrom\t$start\t$end\t$phenotype\t$hpo\tHI3:$ID::$ts\t$coord"
+            lappend L_toWriteLoss "$chrom\t$start\t$end\t$phenotype\t$hpo\tHI3:$ID:$ts:$iscaRegionName\t$coord"
         }
         if {$ts eq "3"} {
             set phenotype "$iscaRegionName"
-            lappend L_toWriteGain "$chrom\t$start\t$end\t$phenotype\t$hpo\tTS3:$ID:$hi\t$coord"
+            lappend L_toWriteGain "$chrom\t$start\t$end\t$phenotype\t$hpo\tTS3:$ID:$hi:$iscaRegionName\t$coord"
         }
     }
     close $f
