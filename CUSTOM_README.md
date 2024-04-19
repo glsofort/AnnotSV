@@ -1,7 +1,7 @@
 ### Update Known pathogenic genes or genomic regions annotation
 
-
 #### hg37
+
 ```bash
 rm /data/GL/database/AnnotSV_annotations/Annotations_Human/FtIncludedInSV/PathogenicSV/GRCh37/*
 
@@ -18,6 +18,7 @@ wget https://ftp.ncbi.nlm.nih.gov/pub/dbVar/sandbox/sv_datasets/nonredundant/ins
 ```
 
 #### hg38
+
 ```bash
 rm /data/GL/database/AnnotSV_annotations/Annotations_Human/FtIncludedInSV/PathogenicSV/GRCh38/*
 
@@ -32,3 +33,6 @@ wget https://ftp.ncbi.nlm.nih.gov/pub/dbVar/sandbox/sv_datasets/nonredundant/dup
 wget https://ftp.ncbi.nlm.nih.gov/pub/dbVar/sandbox/sv_datasets/nonredundant/insertions/GRCh38.nr_insertions.pathogenic.tsv.gz
 
 ```
+
+### Update Haploinsufficiency (HI) and triplosensitivity (TS) scores annotations
+
