@@ -15,6 +15,7 @@ wget https://ftp.ncbi.nlm.nih.gov/pub/dbVar/sandbox/sv_datasets/nonredundant/del
 wget https://ftp.ncbi.nlm.nih.gov/pub/dbVar/sandbox/sv_datasets/nonredundant/duplications/GRCh37.nr_duplications.pathogenic.tsv.gz
 wget https://ftp.ncbi.nlm.nih.gov/pub/dbVar/sandbox/sv_datasets/nonredundant/insertions/GRCh37.nr_insertions.pathogenic.tsv.gz
 
+cp /data/GL/database/AnnotSV_annotations/Annotations_Human/Gene-based/OMIM/*_morbid.tsv.gz /data/GL/database/AnnotSV_annotations/Annotations_Human/FtIncludedInSV/PathogenicSV/GRCh37/
 ```
 
 #### hg38
@@ -31,6 +32,8 @@ wget ftp://ftp.clinicalgenome.org/ClinGen_region_curation_list_GRCh38.tsv
 wget https://ftp.ncbi.nlm.nih.gov/pub/dbVar/sandbox/sv_datasets/nonredundant/deletions/GRCh38.nr_deletions.pathogenic.tsv.gz
 wget https://ftp.ncbi.nlm.nih.gov/pub/dbVar/sandbox/sv_datasets/nonredundant/duplications/GRCh38.nr_duplications.pathogenic.tsv.gz
 wget https://ftp.ncbi.nlm.nih.gov/pub/dbVar/sandbox/sv_datasets/nonredundant/insertions/GRCh38.nr_insertions.pathogenic.tsv.gz
+
+cp /data/GL/database/AnnotSV_annotations/Annotations_Human/Gene-based/OMIM/*_morbid.tsv.gz /data/GL/database/AnnotSV_annotations/Annotations_Human/FtIncludedInSV/PathogenicSV/GRCh38/
 
 ```
 

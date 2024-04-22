@@ -454,11 +454,12 @@ proc checkdbVar_PathogenicFile {genomeBuild} {
                 set start [lindex $Ls $i_start]
                 set end [lindex $Ls $i_stop]
                 set Source [lindex $Ls $i_source]
+                set CustomSource [string map {";" "&"} $Source]
                 set coord "$chrom:${start}-$end"
                 set phenotype ""
                 set hpo ""
                 
-                lappend L_toWrite$svtype "$chrom\t$start\t$end\t$phenotype\t$hpo\tdbVar:$Source\t$coord"
+                lappend L_toWrite$svtype "$chrom\t$start\t$end\t$phenotype\t$hpo\tdbVar:$CustomSource\t$coord"
             }
             close $f
         }
