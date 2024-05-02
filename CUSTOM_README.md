@@ -39,3 +39,39 @@ cp /data/GL/database/AnnotSV_annotations/Annotations_Human/Gene-based/OMIM/*_mor
 
 ### Update Haploinsufficiency (HI) and triplosensitivity (TS) scores annotations
 
+### Build
+```bash
+docker build -t namxle/ubuntu-annotsv:22.04-3.4 .
+
+docker run -v ./:/workspace -it namxle/ubuntu-annotsv:22.04-3.4 /bin/bash run.sh 
+
+docker run -v ./:/workspace -v /data/GL/database/:/database -it namxle/ubuntu-annotsv:22.04-3.4 bash
+
+cd AnnotSV_annotations
+git clone https://github.com/lgmgeo/AnnotSV.git
+cd AnnotSV
+make PREFIX=. install
+make PREFIX=. install-human-annotation
+mv share/AnnotSV/Annotations_Exomiser ..
+mv share/AnnotSV/Annotations_Human ..
+cd ..
+rm -r AnnotSV
+
+ git submodule foreach git pull
+ git submodule update --init --recursive --remote
+ git pull --recurse-submodules
+
+```
+### Run
+```bash
+docker run -v ./:/workspace -v /data/GL/database/:/database -it namxle/ubuntu-annotsv:22.04-3.4 bash
+
+/workspace/AnnotSV/bin/AnnotSV \
+-annotationsDir /database/AnnotSV_annotations \
+-genomeBuild GRCh37 \
+-outputDir /workspace/output \
+-outputFile result.tsv \
+-SVinputFile CNV.vcf \
+-annotationMode full \
+-SVminSize 10
+```
