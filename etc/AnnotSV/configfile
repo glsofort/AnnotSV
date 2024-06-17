@@ -57,7 +57,7 @@ Samples_ID                      *
 Annotation_mode                 *
 
 # Genes annotations:
-# CytoBand			
+CytoBand			
 Gene_name                       *
 Closest_left
 Closest_right
