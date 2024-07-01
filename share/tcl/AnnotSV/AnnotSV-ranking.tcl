@@ -1,5 +1,5 @@
 ############################################################################################################
-# AnnotSV 3.4                                                                                              #
+# AnnotSV 3.4.2                                                                                            #
 #                                                                                                          #
 # AnnotSV: An integrated tool for Structural Variations annotation and ranking                             #
 #                                                                                                          #
@@ -22,11 +22,16 @@
 ############################################################################################################
 
 proc warningRankingMessage {L_header field} {
-    puts "WARNING: \"$field\" annotation is missing:"
-    puts "******************************************"
-    puts "$L_header"
-    puts "******************************************"
-    puts "         => No ranking provided\n"
+    global g_AnnotSV
+
+	if {$g_AnnotSV(organism) eq "Human"} {
+	    puts "WARNING: \"$field\" annotation is missing:"
+	    puts "******************************************"
+	    puts "$L_header"
+	    puts "******************************************"
+	    puts "         => No ranking provided\n"
+	}
+	return
 }
 
 
@@ -152,7 +157,7 @@ proc SVrankingLoss {L_annotations} {
         } else {
             if {$poPloss ne ""} {
                 # 2B. Partial overlap of a known pathogenic Loss SV (+0.00)
-                set g_rankingExplanations($AnnotSV_ID,2B) "2B (cf po_P_loss_source, HI and OMIM_morbid, +0.00);"
+                set g_rankingExplanations($AnnotSV_ID,2B) "2B (cf po_P_loss_source, HI, OMIM_morbid, +0.00);"
             }
             if {$Bloss ne ""} {
                 # 2F. Completely contained within an established benign CNV region (-1.00)
@@ -192,7 +197,7 @@ proc SVrankingLoss {L_annotations} {
             #     OR contains no additional genomic material).(-1.00)
             if {![info exists g_rankingExplanations($AnnotSV_ID,2F)]} {
                 # Does not add a -1 additional score if 2F/4O is completed.
-                set g_rankingExplanations($AnnotSV_ID,40) "40 (cf B_loss_source and po_B_loss_allG_source, -1.00);"
+                set g_rankingExplanations($AnnotSV_ID,40) "40 (cf B_loss_source, po_B_loss_allG_source, -1.00);"
             }
         }
         
@@ -237,7 +242,6 @@ proc SVrankingLoss {L_annotations} {
         set exomiser    [lindex $Ls $g_i(exomiser)]
         regsub "," $exomiser "." exomiser
         set phenogenius [lindex $Ls $g_i(phenogenius)]
-
         if {$HI eq "3" || $morbid eq "yes"} {
             set location   [lindex $Ls $g_i(location)]
             set location2  [lindex $Ls $g_i(location2)]
@@ -296,42 +300,23 @@ proc SVrankingLoss {L_annotations} {
                     # 2E-4. ...>=1 exon deleted AND no established pathogenic snv/indel have been reported in the observed CNV AND variant removes > 10% of protein (+0.20)
                     lappend g_rankingExplanations($AnnotSV_ID,2E-4) "$gene"
                 }
-            }
-        } else {
-            set pLI        [lindex $Ls $g_i(pLI)]
-            regsub -all "," $pLI "." pLI
-            set loeuf      [lindex $Ls $g_i(loeuf)]
-            regsub -all "," $loeuf "." loeuf
-            set HIpercent  [lindex $Ls $g_i(HIpercent)]
-            regsub -all "," $HIpercent "." HIpercent
-            set i 0
-            if {$pLI >= 0.9} {incr i}
-            if {$HIpercent <= 10} {incr i}
-            if {$i >= 2} {
-                # 2H. Two or more HI predictors suggest that AT LEAST ONE gene in the interval is HI (+0.15)
-                lappend g_rankingExplanations($AnnotSV_ID,2H) "$gene"
-            }
-            #	    if {$loeuf != ""} {incr i}
-            #	    if {$i >= 2} {
-                #		# 2H. Two or more HI predictors suggest that AT LEAST ONE gene in the interval is HI (+0.15)
-                #		lappend g_rankingExplanations($AnnotSV_ID,2H) "$gene"
-                #		set scoreLoeuf(0) "0.075"
-                #		set scoreLoeuf(1) "0.0675"
-                #		set scoreLoeuf(2) "0.06"
-                #		set scoreLoeuf(3) "0.0525"
-                #		set scoreLoeuf(4) "0.0450"
-                #		set scoreLoeuf(5) "0.0375"
-                #		set scoreLoeuf(6) "0.03"
-                #		set scoreLoeuf(7) "0.0225"
-                #		set scoreLoeuf(8) "0.0150"
-                #		set scoreLoeuf(9) "0.0075"
-                #		set score2H [expr {0.075+$scoreLoeuf($loeuf)}]
-                #		if {![info exists g_rankingScore($AnnotSV_ID,maxLoeuf)]} {
-                    #		    set g_rankingScore($AnnotSV_ID,maxLoeuf) $score2H
-                    #		} elseif {$score2H > $g_rankingScore($AnnotSV_ID,maxLoeuf)} {
-                    #		    set g_rankingScore($AnnotSV_ID,maxLoeuf) $score2H
-                    #		}
-                #	    }
+            } 
+        } 
+
+		# Evaluation of the 2H criteria
+        set pLI        [lindex $Ls $g_i(pLI)]
+        regsub -all "," $pLI "." pLI
+        set loeuf      [lindex $Ls $g_i(loeuf)]
+        regsub -all "," $loeuf "." loeuf
+        set HIpercent  [lindex $Ls $g_i(HIpercent)]
+        regsub -all "," $HIpercent "." HIpercent
+        set i 0
+        if {$pLI >= 0.9} {incr i}
+        if {$HIpercent <= 10} {incr i}
+
+        if {$i >= 2} {
+            # 2H. Two or more HI predictors suggest that AT LEAST ONE gene in the interval is HI (+0.15)
+            lappend g_rankingExplanations($AnnotSV_ID,2H) "$gene"
         }
         
         ## Section 5: Evaluation of inheritance pattern/family history for patient being studied
@@ -371,7 +356,7 @@ proc achieveSVrankingLoss {AnnotSV_ID} {
     #   (the "0" scores are evaluated in a second time)
     
     # 40: Skip to section 5 if either your CNV overlapped with a pathogenic Loss SV in section 2
-    
+ 
     if {[info exists g_rankingExplanations($AnnotSV_ID,2A)]} {
         # 2A
         set g_rankingScore($AnnotSV_ID) [expr {$g_rankingScore($AnnotSV_ID)+1.00}]
@@ -552,7 +537,7 @@ proc SVrankingGain {L_annotations} {
         } else {
             if {$poPgain ne ""} {
                 # 2B. Partial overlap of a known pathogenic Gain SV (+0.00)
-                set g_rankingExplanations($AnnotSV_ID,2B) "2B (cf po_P_gain_source, TS, OMIM_morbid+0.00);"
+                set g_rankingExplanations($AnnotSV_ID,2B) "2B (cf po_P_gain_source, TS, OMIM_morbid, +0.00);"
             }
             
             if {$poBgainAllG ne ""} {
@@ -564,10 +549,10 @@ proc SVrankingGain {L_annotations} {
             } elseif {$poBgainAllG ne ""} {
                 # 2F. Larger than known benign copy-number gain, does not include additional protein-coding genes (-1.00)
                 # => non protein coding gene list to code to differentiate of 2C
-                set g_rankingExplanations($AnnotSV_ID,2F) "2F (cf po_B_gain_allG_source, -1.00)"
+                set g_rankingExplanations($AnnotSV_ID,2F) "2F (cf po_B_gain_allG_source, -1.00);"
             } elseif {$poBgainSomeG ne ""} {
                 # 2G. Overlaps a benign copy-number gain but includes additional genomic material (+0.00)
-                set g_rankingExplanations($AnnotSV_ID,2G) "2G (cf po_B_gain_someG_source, +0.00)"
+                set g_rankingExplanations($AnnotSV_ID,2G) "2G (cf po_B_gain_someG_source, +0.00);"
             }
         }
         
@@ -593,7 +578,7 @@ proc SVrankingGain {L_annotations} {
         ####################################################################################################################
         if {$poBgainAllG ne "" || $Bgain ne "" || $poBgainSomeG ne ""} {
             # 4O. Overlap with common population variation.
-            set g_rankingExplanations($AnnotSV_ID,40) "40 (cf po_B_gain_AllG_source, B_gain_source and po_B_gain_SomeG_source, +0.00);"
+            set g_rankingExplanations($AnnotSV_ID,40) "40 (cf po_B_gain_AllG_source, B_gain_source, po_B_gain_SomeG_source, +0.00);"
         }
         
         

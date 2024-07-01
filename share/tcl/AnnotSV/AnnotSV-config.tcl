@@ -1,5 +1,5 @@
 ############################################################################################################
-# AnnotSV 3.4                                                                                              #
+# AnnotSV 3.4.2                                                                                            #
 #                                                                                                          #
 # AnnotSV: An integrated tool for Structural Variations annotation and ranking                             #
 #                                                                                                          #
@@ -80,13 +80,14 @@ proc configureAnnotSV {argv} {
     set g_AnnotSV(tx)                       "RefSeq"
     set g_AnnotSV(txFile)                   ""
     set g_AnnotSV(variantconvertDir)        ""
+    set g_AnnotSV(variantconvertMode)       "combined"
     set g_AnnotSV(vcf)                      "0"
     
     
     ###########################
     ## Load config file options
     ###########################
-    set lOptionsOk "annotationsDir annotationMode bcftools bedtools benignAF candidateGenesFile candidateGenesFiltering candidateSnvIndelFiles candidateSnvIndelSamples extann externalGeneFiles genomeBuild hpo includeCI metrics minTotalNumber outputDir outputFile overlap overwrite promoterSize rankFiltering reciprocal REreport REselect1 REselect2 samplesidBEDcol snvIndelFiles snvIndelPASS snvIndelSamples SVinputFile SVinputInfo SVminSize svtBEDcol tx txFile variantconvertDir vcf"
+    set lOptionsOk "annotationsDir annotationMode bcftools bedtools benignAF candidateGenesFile candidateGenesFiltering candidateSnvIndelFiles candidateSnvIndelSamples extann externalGeneFiles genomeBuild hpo includeCI metrics minTotalNumber outputDir outputFile overlap overwrite promoterSize rankFiltering reciprocal REreport REselect1 REselect2 samplesidBEDcol snvIndelFiles snvIndelPASS snvIndelSamples SVinputFile SVinputInfo SVminSize svtBEDcol tx txFile variantconvertDir variantconvertMode vcf"
     
     # Setting of $g_AnnotSV(SVinputFile) from the command line
     set i 0
@@ -320,7 +321,22 @@ proc configureAnnotSV {argv} {
             puts "Exit with error."
             puts "############################################################################"
             exit 2
-        }
+        } else {
+			# Minimum bedtools version compatible with AnnotSV is version 2.25
+			if {$tool eq "bedtools"} {
+				if {[regexp "(\[0-9\]+\\.\[0-9\]+\\.\[0-9\]+)" $Message match bedtoolsVersion]} {
+					set L_bedtoolsVersion [split $bedtoolsVersion "."]
+					if {[lindex $L_bedtoolsVersion 0] < 2 || ([lindex $L_bedtoolsVersion 0] eq 2 && [lindex $L_bedtoolsVersion 1] < 25)} {
+					    puts "############################################################################"
+					    puts "The minimum bedtools version compatible with AnnotSV is version 2.25."
+						puts "You are using bedtools version $bedtoolsVersion"
+					    puts "Exit with error."
+					    puts "############################################################################"
+						exit 2
+					}
+				}
+			}
+		}
     }
     
     # tx: It must be "RefSeq" or "ENSEMBL"
@@ -385,7 +401,17 @@ proc configureAnnotSV {argv} {
         puts "############################################################################"
         exit 2
     }
-    
+   
+    ## It must be "combined", "full" or "fullsplit"
+    set L_variantconvertMode {combined full fullsplit}
+    if {[lsearch -exact $L_variantconvertMode "$g_AnnotSV(variantconvertMode)"] eq -1} {
+        puts "############################################################################"
+        puts "Bad option value: -variantconvertMode = $g_AnnotSV(variantconvertMode)"
+        puts "Should be \"combined\", \"full\" or \"fullsplit\""
+        puts "############################################################################"
+        exit 2
+    }
+ 
     ## The following step could be improved: too long
     #################################################
     set g_AnnotSV(snvIndelSamples) [split $g_AnnotSV(snvIndelSamples)  ";|,"]
@@ -496,18 +522,18 @@ proc configureAnnotSV {argv} {
         set g_AnnotSV(candidateSnvIndelSamples) ""
     }
     
-    ## It must be "GRCh37" or "GRCh38" or "mm9" or "mm10" for the genomeBuild option.
-    if {![regexp -nocase "^(GRCh37)|(GRCh38)|(mm9)|(mm10)$" $g_AnnotSV(genomeBuild)]} {
+    ## It must be "GRCh37" or "GRCh38" or "mm39" or "mm9" or "mm10" for the genomeBuild option.
+    if {![regexp -nocase "^(GRCh37)|(GRCh38)|(mm39)|(mm9)|(mm10)$" $g_AnnotSV(genomeBuild)]} {
         puts "############################################################################"
         puts "Bad option value: -genomeBuild = $g_AnnotSV(genomeBuild)"
-        puts "Should be \"GRCh37\", \"GRCh38\", \"mm9\" or \"mm10\""
+        puts "Should be \"GRCh37\", \"GRCh38\", \"mm39\", \"mm9\" or \"mm10\""
         puts "############################################################################"
         exit 2
     }
     # Definition of the $g_AnnotSV(organism) variable
     if {[regexp -nocase "^(GRCh37)|(GRCh38)$" $g_AnnotSV(genomeBuild)]} {
         set g_AnnotSV(organism) "Human"
-    } elseif {[regexp -nocase "^(mm9)|(mm10)$" $g_AnnotSV(genomeBuild)]} {
+    } elseif {[regexp -nocase "^(mm39)|(mm9)|(mm10)$" $g_AnnotSV(genomeBuild)]} {
         set g_AnnotSV(organism) "Mouse"
     }
     
