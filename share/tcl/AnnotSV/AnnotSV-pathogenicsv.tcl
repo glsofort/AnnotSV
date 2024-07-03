@@ -181,6 +181,7 @@ proc checkClinVar_PathogenicFile {genomeBuild} {
             
             if {[regexp "CLNSIG=(\[^;\]+)" $infos match CLNSIG]} {}
 
+            set cid [lindex $Ls 2]
             set ref [lindex $Ls 3]
             set alt [lindex $Ls 4]
             set SVlength [expr {abs([string length $ref]-[string length $alt])+1}]
@@ -222,7 +223,7 @@ proc checkClinVar_PathogenicFile {genomeBuild} {
                 set i [lindex $indices 1]
             }
             regsub "(\\\|)?not_provided" $CLNDN "" CLNDN
-            set toWrite "$chrom\t$start\t$end\t$CLNDN\t$L_HPO\tCLN:$ALLELEID:$gs:$clnsigs\t$coord"
+            set toWrite "$chrom\t$start\t$end\t$CLNDN\t$L_HPO\tCLN:$cid:$gs:$clnsigs\t$coord"
             if {$CLNVC eq "Deletion"} {
                 lappend L_toWriteLoss "$toWrite"
             } elseif {$CLNVC eq "Duplication"} {

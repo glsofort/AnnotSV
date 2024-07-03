@@ -7,7 +7,7 @@ rm /data/GL/database/AnnotSV_annotations/Annotations_Human/FtIncludedInSV/Pathog
 
 cd /data/GL/database/AnnotSV_annotations/Annotations_Human/FtIncludedInSV/PathogenicSV/GRCh37
 
-wget https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh37/clinvar_20240416.vcf.gz
+wget https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh37/clinvar_20240630.vcf.gz
 wget ftp://ftp.clinicalgenome.org/ClinGen_gene_curation_list_GRCh37.tsv
 wget ftp://ftp.clinicalgenome.org/ClinGen_region_curation_list_GRCh37.tsv
 
@@ -25,7 +25,7 @@ rm /data/GL/database/AnnotSV_annotations/Annotations_Human/FtIncludedInSV/Pathog
 
 cd /data/GL/database/AnnotSV_annotations/Annotations_Human/FtIncludedInSV/PathogenicSV/GRCh38
 
-wget https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/clinvar_20240416.vcf.gz
+wget https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/clinvar_20240630.vcf.gz
 wget ftp://ftp.clinicalgenome.org/ClinGen_gene_curation_list_GRCh38.tsv
 wget ftp://ftp.clinicalgenome.org/ClinGen_region_curation_list_GRCh38.tsv
 
