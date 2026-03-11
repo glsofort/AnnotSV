@@ -1,9 +1,9 @@
 ############################################################################################################
-# AnnotSV 3.4.2                                                                                            #
+# AnnotSV 3.5.5                                                                                            #
 #                                                                                                          #
 # AnnotSV: An integrated tool for Structural Variations annotation and ranking                             #
 #                                                                                                          #
-# Copyright (C) 2017-2024 Veronique Geoffroy (veronique.geoffroy@inserm.fr)                                #
+# Copyright (C) 2017-present Veronique Geoffroy (veronique.geoffroy@inserm.fr)                             #
 #                                                                                                          #
 # This is part of AnnotSV source code.                                                                     #
 #                                                                                                          #
@@ -31,7 +31,7 @@ proc checkPathogenicFiles {} {
     
     global g_AnnotSV
     
-    foreach genomeBuild {GRCh37 GRCh38} {
+    foreach genomeBuild {GRCh37 GRCh38 CHM13} {
         set pathogenicDir "$g_AnnotSV(annotationsDir)/Annotations_$g_AnnotSV(organism)/FtIncludedInSV/PathogenicSV/$genomeBuild"
         
         # Files to create/update
@@ -91,7 +91,7 @@ proc checkPathogenicFiles {} {
             set pathogenicFile_TmpFormatted "$pathogenicDir/pathogenic_${SVtype}_SV_$genomeBuild.tmp.formatted.bed"
             if {![file exist $pathogenicFile_TmpFormatted]} {continue}
             set pathogenicFile_Sorted "$pathogenicDir/pathogenic_${SVtype}_SV_$genomeBuild.sorted.bed"
-            set sortTmpFile "$g_AnnotSV(outputDir)/[clock format [clock seconds] -format "%Y%m%d-%H%M%S"]_sort.tmp.bash"
+            set sortTmpFile "$g_AnnotSV(outputDir)/[clock format [clock seconds] -format "%Y%m%d-%H%M%S"]_[pid]_sort.tmp.bash"
             ReplaceTextInFile "#!/bin/bash" $sortTmpFile
             WriteTextInFile "# The locale specified by the environment can affects the traditional sort order. We need to use native byte values." $sortTmpFile
             WriteTextInFile "export LC_ALL=C" $sortTmpFile

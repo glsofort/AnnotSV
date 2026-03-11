@@ -15,18 +15,25 @@ share/AnnotSV/Annotations_Exomiser/
 share/python3/annotsv/
 src/annotsv/
 Python/
-share/python3/phenogenius/
+share/python3/phenogeniuscli/
+
+# Exomiser:
+# File share/AnnotSV/jar/exomiser-rest-prioritiser-14.1.0.jar is 114.75 MB; this exceeds GitHub's file size limit of 100.00 MB
+# => Downloaded with the Makefile
+share/AnnotSV/jar/exomiser-rest-prioritiser-14.1.0.jar
 
 # Unit tests
 tests/AnnotSV/privateTest_*
 tests/AnnotSV/test_*/command_Tcl.log
 tests/AnnotSV/test_*/output/
 tests/AnnotSV/ToDo
+tests/AnnotSV/check_all_public_test_directory.log
 
 # VariantConvert
 share/python3/variantconvert/pipinstall.flag
 share/python3/variantconvert/src/variantconvert/configs/GRCh37/annotsv3_from*local.json
 share/python3/variantconvert/src/variantconvert/configs/GRCh38/annotsv3_from*local.json
+share/python3/variantconvert/src/variantconvert/configs/CHM13/annotsv3_from*local.json
 share/python3/variantconvert/src/variantconvert/__pycache__/
 share/python3/variantconvert/src/variantconvert/__pycache__/*.pyc
 share/python3/variantconvert/src/variantconvert/converters/__pycache__/

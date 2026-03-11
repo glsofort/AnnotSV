@@ -1,9 +1,9 @@
 ############################################################################################################
-# AnnotSV 3.4.2                                                                                            #
+# AnnotSV 3.5.5                                                                                            #
 #                                                                                                          #
 # AnnotSV: An integrated tool for Structural Variations annotation and ranking                             #
 #                                                                                                          #
-# Copyright (C) 2017-2024 Veronique Geoffroy (veronique.geoffroy@inserm.fr)                                #
+# Copyright (C) 2017-present Veronique Geoffroy (veronique.geoffroy@inserm.fr)                             #
 #                                                                                                          #
 # This is part of AnnotSV source code.                                                                     #
 #                                                                                                          #
@@ -74,6 +74,7 @@ proc VCFannotation {SVchrom SVstart SVend SVtype} {
             set tmpVCF1 "$g_AnnotSV(outputDir)/[file tail $vcfF].[clock seconds].separate.vcf"
             set tmpVCFgz1 "$g_AnnotSV(outputDir)/[file tail $vcfF].[clock seconds].separate.vcf.gz"
             catch {eval exec $g_AnnotSV(bcftools) norm -m -both $vcfF > $tmpVCF1} Message
+            
             if {[file size $tmpVCF1] eq 0} {
                 # we continue AnnotSV without splitting the multiallelic sites!
                 puts "\t   -- VCFannotation --"
@@ -250,7 +251,7 @@ proc VCFannotation {SVchrom SVstart SVend SVtype} {
                 puts "\t\t-> $iSV SV excluded (considering only SNV/indel from the VCF)"
             }
             if {$iNotPASS} {
-                puts "\t\t-> $iNotPASS SNV/indel excluded beacause of the FILTER value not equal to \"PASS\""
+                puts "\t\t-> $iNotPASS SNV/indel excluded because of the FILTER value not equal to \"PASS\""
             }
             if {$iNotGT} {
                 puts "\t\t-> $iNotGT SNV/indel excluded because of the absence of GT information"
@@ -342,7 +343,7 @@ proc VCFsToBED {SV_VCFfiles} {
     ## - For precise structural variants (e.g. ref="G" and alt="ACTGCTA):
     ##   END = POS + length of REF allele - 1
     
-    set SV_BEDfile "$g_AnnotSV(outputDir)/[clock format [clock seconds] -format "%Y%m%d-%H%M%S"]_AnnotSV_inputSVfile.bed"
+    set SV_BEDfile "$g_AnnotSV(outputDir)/[clock format [clock seconds] -format "%Y%m%d-%H%M%S"]_[pid]_AnnotSV_inputSVfile.bed"
     file delete -force "$SV_BEDfile"
     set VCFheader ""
     # Variants from the input file that are not annotated by AnnotSV are reported in $unannotatedOutputFile
@@ -378,7 +379,10 @@ proc VCFsToBED {SV_VCFfiles} {
         # - ”.” must be specified for each missing allele in the GT field (for example ./.) (=> if a call cannot be made for a sample at a given locus)
         #
         # In the code:
-        # - Sample ID with GT "./." or ".|." (unknown GT) are reported in the "Samples_ID" output column
+        # - if g_AnnotSV(missingGTinSamplesid) set to 1 (default):
+        #	=> Sample ID with GT "./." or ".|." (unknown GT) are reported in the "Samples_ID" output column
+        # - if g_AnnotSV(missingGTinSamplesid) set to 0:
+        #   => Sample ID with GT "./." or ".|." (unknown GT) are NOT reported in the "Samples_ID" output column
         set GTabsent 1; #To check if the “GT” field is indicated in the FORMAT column
         
         set VCFlineNumber 0
@@ -419,7 +423,7 @@ proc VCFsToBED {SV_VCFfiles} {
                 continue
             }
             incr i
-            
+           
             if {$VCFheaderNotPresent} {
                 set VCFheaderNotPresent 0
                 puts "ERROR:\n$VCFfile: no VCF header line (prefixed with \"#CHROM\"). Check your VCF."
@@ -431,7 +435,7 @@ proc VCFsToBED {SV_VCFfiles} {
             ##########################################
             # Example of SV:
             # - Type1: ref="G" and alt="ACTGCTAACGATCCGTTTGCTGCTAACGATCTAACGATCGGGATTGCTAACGATCTCGGG" (length > 50bp)
-            # - Type2: alt="<INS>", "<DEL>", ...
+            # - Type2: alt="<INS>", "<DEL>", "<TRA>"...
             # - Type3: squared-bracketed SV notation: alt="G]17:1584563]" or alt="G]chr17:1584563]" (length > 50bp)
             #          (developed with the assistance and guidance of Rodrigo Martin, BSC, Spain)
             set BNDrescue 0 ;# The ALT of a rescue BND is not square-bracketed anymore
@@ -460,7 +464,7 @@ proc VCFsToBED {SV_VCFfiles} {
                 # Type2: angle-bracketed notation <...>
                 
                 if {$end eq ""} {
-                    # INS:ME (LINE1, ALU or SVA)
+                    # INS:ME ("LINE1", "ALU", "SVA" or "TRA without mate_id")
                     set end $posVCF
                 }
                 
@@ -475,6 +479,20 @@ proc VCFsToBED {SV_VCFfiles} {
                     set end $posVCF
                     set svtype "TRA"
                     set svlen 0
+                    # Processing the alt of the TRA (in case of having 2 TRA with the same "start" but different "end"):
+                    # "alt" => "alt_CHR2_END"
+                    #
+                    # Example:
+                    # Two translocations that start at the same position, but both ENDs are different:
+                    #    chrX  83731873  .  T   <TRA>   46    .   CHR2=chr1;CIEND=-563,563;CIPOS=-563,563;END=102454994;SVLEN=1;SVTYPE=TRA    GT:PE:SR    0/1:7,2:0,0
+                    #    chrX  83731873  .  T   <TRA>   69    .   CHR2=chr1;CIEND=-563,563;CIPOS=-563,563;END=111581087;SVLEN=1;SVTYPE=TRA    GT:PE:SR    0/1:6,3:0,0
+                    # => alt => <TRA>_chr1_102454994
+                    # => This will permit to obtain 2 different AnnotSV_ID for the 1st breakend: X_83731310_83732436_TRA_1 and X_83731310_83732436_TRA_2
+                    if {$chr2 ne ""} { ;# Some TRA do not have mate_id
+                        set alt "<TRA>_${chr2}_$end"
+                        set altVCF $alt
+                        lset Ls 4 "$alt"
+                    }
                 } else {
                     # First, we choose the SVtype in the ALT column.
                     # Second, we choose the SVTYPE in the INFO column.
@@ -599,7 +617,7 @@ proc VCFsToBED {SV_VCFfiles} {
                         set L "$chrom\t$posVCF\t[lindex $Ls 2]\t$ref\t$altVCF\t[join [lrange $Ls 5 6] "\t"]\t$INFOcol\t[join [lrange $Ls 8 end] "\t"]"
                         set Ls [split $L "\t"]
                     }
-                    
+                   
                     if {[string length $baseLeft] > 1 || [string length $baseRight] > 1} {
                         # INS ("first mapped base" is followed by the inserted sequence)
                         ################################################################
@@ -612,8 +630,10 @@ proc VCFsToBED {SV_VCFfiles} {
                         set alt "<INS>"
                         if {$svlen<$g_AnnotSV(SVminSize)} {
                             # it is an indel
+# Bug ici avec cet exemple envoyé par Tatiana par mail
+# chrX    114967277       gridss299bf_21o A       ]chrX:115163566]TCTCATACCA
                             WriteTextInFile "${chrom}_${posVCF}_${end}_${svtype}_${ref}_${altVCF}: variantLength ($svlen) < SVminSize ($g_AnnotSV(SVminSize)) (line $VCFlineNumber)" $unannotatedOutputFile
-                            continue
+							continue
                         }
                     } elseif {$bracketRight eq "]" && $baseRight ne ""} {
                         # DUP ("first mapped base" is NOT contained in the bracket: "N[" or "]N"; REF is after the brackets
@@ -707,6 +727,8 @@ proc VCFsToBED {SV_VCFfiles} {
                 continue
             }
             
+            
+            
             if {$end < $pos} {set tutu $end; set end $pos; set pos $tutu}
             if {$end eq $pos} {set end [expr {$pos+1}]}
             
@@ -780,8 +802,19 @@ proc VCFsToBED {SV_VCFfiles} {
                 set isample 0
                 foreach sampleValue [lrange $Ls 9 end] {
                     set gt [lindex [split $sampleValue ":"] $i_gt]
-                    if {$gt ne "0/0" && $gt ne "0\|0"} {lappend L_samplesid [lindex $L_allSamples $isample]}; # AnnotSV reports the sample_id with unknown GT ("./." and ".|.")
-                    if {$gt eq "./." || $gt eq ".\|."} {incr nUnknownGT}
+                    if {$gt ne "0/0" && $gt ne "0\|0"} {
+                        if {$gt eq "./." || $gt eq ".\|."} {
+                            incr nUnknownGT
+                            if {$g_AnnotSV(missingGTinSamplesid)} {
+                                # AnnotSV reports the sample_id with unknown GT ("./." and ".|.")
+                                lappend L_samplesid [lindex $L_allSamples $isample]
+                            } else {
+                                # AnnotSV do not reports the sample_id with unknown GT ("./." and ".|.")
+                            }
+                        } else {
+                            lappend L_samplesid [lindex $L_allSamples $isample]
+                        }
+                    }
                     incr isample
                 }
             }
@@ -877,11 +910,15 @@ proc VCFsToBED {SV_VCFfiles} {
         
         # Warning for the unknown GT
         ############################
-        if {$nUnknownGT > 1} {
-            puts "\t...WARNING: $nUnknownGT sample IDs with missing alleles in the GT field (./. or .\|.) have been reported in the \"Samples_ID\" output field\n"
-        } elseif {$nUnknownGT eq 1} {
-            puts "\t...WARNING: 1 sample ID with missing alleles in the GT field (./. or .\|.) has been reported in the \"Samples_ID\" output field\n"
-        } else {puts "\n"}
+        if {$g_AnnotSV(missingGTinSamplesid)} {
+            if {$nUnknownGT > 1} {
+                puts "\t...WARNING: $nUnknownGT missing alleles (./. or .\|.) found in the GT field of reported SV"
+                puts "\t            Corresponding samples have been reported in the \"Samples_ID\" output field\n"
+            } elseif {$nUnknownGT eq 1} {
+                puts "\t...WARNING: 1 missing allele (./. or .\|.) found in the GT field of reported SV"
+                puts "\t            Corresponding samples have been reported in the \"Samples_ID\" output field\n"
+            } else {puts "\n"}
+        }
         
         # Writing of the BED file
         #########################

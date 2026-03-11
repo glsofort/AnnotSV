@@ -1,9 +1,9 @@
 ############################################################################################################
-# AnnotSV 3.4.2                                                                                            #
+# AnnotSV 3.5.5                                                                                            #
 #                                                                                                          #
 # AnnotSV: An integrated tool for Structural Variations annotation and ranking                             #
 #                                                                                                          #
-# Copyright (C) 2017-2024 Veronique Geoffroy (veronique.geoffroy@inserm.fr)                                #
+# Copyright (C) 2017-present Veronique Geoffroy (veronique.geoffroy@inserm.fr)                             #
 #                                                                                                          #
 # This is part of AnnotSV source code.                                                                     #
 #                                                                                                          #
@@ -21,18 +21,120 @@
 # along with this program; If not, see <http://www.gnu.org/licenses/>.                                     #
 ############################################################################################################
 
+
+# No link is done without a check of the genomic location
+#########################################################
+# - AGS3 example:
+#		grep AGS3 $ANNOTSV/share/AnnotSV/Annotations_Human/Gene-based/OMIM/20240806_morbid.tsv
+#			AGS3    yes
+#			=> AGS3 is morbid
+#		grep AGS3 $ANNOTSV/share/AnnotSV/Annotations_Human/Genes/GRCh38/genes.RefSeq.sorted.bed
+#			=> No genomic coordinates
+#		grep AGS3 $ANNOTSV/share/AnnotSV/Annotations_Human/Gene-based/NCBIandHGNCgeneID/geneSymbol_NCBIandHGNCgeneID.tsv
+#			AGS3    26086
+#			=> NCBIgeneID(AGS3) = 26086
+#		grep 26086 $ANNOTSV/share/AnnotSV/Annotations_Human/Gene-based/NCBIandHGNCgeneID/geneSymbol_NCBIandHGNCgeneID.tsv
+#			GPSM1   26086
+#			AGS3    26086
+#			DKFZP727I051    26086
+#			=> Without AGS3 coordinates, we can't link this gene to other genes (GPSM1, DKFZP727I051)
+proc memorizeGeneNameAlias {} {
+    
+    global g_AnnotSV
+    global g_alias
+    global g_L_coord
+    
+    if {$g_AnnotSV(organism) ne "Human"} { return }
+    
+    # Here, we memorize the RefSeq/ENSEMBL CHM13 gene coordinates (more complete than the GRCh37 and GRCh38)
+    # => Will permit to check the different alias of a unique gene (only for overlapping genomic coordinates. cf issues 156 + 132)
+    set geneCoordFile "$g_AnnotSV(annotationsDir)/Annotations_$g_AnnotSV(organism)/Genes/CHM13/genes.$g_AnnotSV(tx).sorted.bed"
+    foreach L [LinesFromFile $geneCoordFile] {
+        set chrom [lindex $L 0]
+        set start [lindex $L 1]
+        set end [lindex $L 2]
+        set gene [lindex $L 4]
+        # We keep all the coordinates for each gene (different transcripts; genes present on the chrX and chrY (e.g. WASH6P); genes present at different locations (e.g. SNORD81))
+        #
+        # Example: WASH6P
+        # grep WASH6P $ANNOTSV/share/AnnotSV/Annotations_Human/Genes/GRCh38/genes.ENSEMBL.sorted.bed
+        # X    156020825    156022415   +   WASH6P  ENST00000476066 156022415       156022415       156020825,156021505,156021693,156021998,156022322,      156021148,156021563,156021792,156022145,156022415,
+        # Y    57209886     57212186    +   WASH6P  ENST00000711283 57212186        57212186        57209886,57210639,      57209980,57212186,
+        #
+        # Example SNORD81:
+        # grep SNORD81 $ANNOTSV/share/AnnotSV/Annotations_Human/Genes/GRCh38/genes.ENSEMBL.sorted.bed
+        # 1       85592279        85592356        +       SNORD81 ENST00000363064 85592356        85592356        85592279,       85592356,
+        # 5       18236122        18236196        +       SNORD81 ENST00000390976 18236196        18236196        18236122,       18236196,
+        # 7       137287686       137287762       +       SNORD81 ENST00000365153 137287762       137287762       137287686,      137287762,
+        lappend g_L_coord($gene) "$chrom $start $end"
+    }
+    foreach gene [array names g_L_coord] {
+        set g_L_coord($gene) [lsort -unique $g_L_coord($gene)]
+    }
+    
+    # Then, for gene names not present in the $geneCoordFile (previous symbol, alias), we use the NCBIgeneID to retrieve new alias
+    # Memorize the link NCBIgeneID-GeneName
+    set NCBIandHGNCgeneDir "$g_AnnotSV(annotationsDir)/Annotations_$g_AnnotSV(organism)/Gene-based/NCBIandHGNCgeneID"
+    foreach L [LinesFromFile "$NCBIandHGNCgeneDir/geneSymbol_NCBIandHGNCgeneID.tsv"] {
+        set gene [lindex $L 0]
+        set NCBIgeneID [lindex $L 1]
+        set NCBIgeneIDfor($gene) $NCBIgeneID
+        lappend L_genesFor($NCBIgeneID) $gene
+    }
+    
+    # We memorize in "$g_alias" the association of the gene names overlapping the same genomic coordinates
+    # Example line (genemap2.txt, GRCh38):
+    # chr2    47806920        47906498        2p21    2p16.3  607871  FBXO11, FBX11, VIT1, PRMT9, IDDFBA      F-box only protein 11   FBXO11  80204   ENSG00000138081 ?2p16   Intellectual developmental disorder with dysmorphic facies and behavioral abnormalities, 618089 (3), Autosomal dominant        Fbxo11 (MGI:2147134)
+    # => PRMT9 (previous symbol) is located on chromosome 4
+    # => FBXO11 is not associated to PRMT9.
+    foreach geneToMatch [array names g_L_coord] {
+        
+        if {![info exists NCBIgeneIDfor($geneToMatch)]} {continue}
+        
+        foreach coordTrue $g_L_coord($geneToMatch) {
+            set trueChrom [lindex $coordTrue 0]
+            set trueStart [lindex $coordTrue 1]
+            set trueEnd [lindex $coordTrue 2]
+            foreach aliasGene $L_genesFor($NCBIgeneIDfor($geneToMatch)) {
+                if {[info exists g_L_coord($aliasGene)]} {
+                    foreach coord $g_L_coord($aliasGene) {
+                        set chrom [lindex $coord 0]
+                        set start [lindex $coord 1]
+                        set end [lindex $coord 2]
+                        if {$trueChrom ne $chrom} {continue}
+                        if {($start < $trueStart && $end > $trueStart) || ($start > $trueStart && $start < $trueEnd)} {
+                            lappend g_alias($geneToMatch) $aliasGene
+                            break
+                        }
+                    }
+                }
+            }
+        }
+    }
+    foreach g [array names g_alias] {
+        set g_alias($g) [lsort -unique $g_alias($g)]
+    }
+}
+
+
+
 ## - Check if the "genemap2.txt" file exists.
 ## - Check and create if necessary the 'date'_OMIM*annotations.tsv files.
 proc checkOMIMfile {} {
     
     global g_AnnotSV
+    global g_alias
+    global g_L_coord
     
-    
-    set omimDir "$g_AnnotSV(annotationsDir)/Annotations_$g_AnnotSV(organism)/Gene-based/OMIM"
     
     ## Check if the OMIM file has been downloaded and create the formatted files if needed
     ######################################################################################
+    set omimDir "$g_AnnotSV(annotationsDir)/Annotations_$g_AnnotSV(organism)/Gene-based/OMIM"
+    
+    # INFO:
+    # Genomic coordinates associated to the OMIM phenotype are available in GRCh38 in "genemap2.txt" ($OMIMfileDownloaded)
     set OMIMfileDownloaded [glob -nocomplain "$omimDir/genemap2.txt"]
+    
     # Header:
     # Chromosome    Genomic Position Start  Genomic Position End    Cyto Location   Computed Cyto Location  MIM Number      Gene/Locus And Other Related Symbols    Gene Name       Approved Gene Symbol    Entrez Gene IDEnsembl Gene ID  Comments        Phenotypes      Mouse Gene Symbol/ID
     
@@ -66,7 +168,7 @@ proc checkOMIMfile {} {
     if {$OMIMfile1FormattedGzip ne "" && $OMIMfile2FormattedGzip ne ""} {return}
     
     
-    ## - Create the 'date'_OMIM-1-annotations.tsv and 'date'_OMIM-2-annotations.tsv files.
+    ## - Create the 'date'_OMIM-1-annotations.tsv and 'date'_OMIM-2-annotations.tsv files (headers):
     ##   Header1: genes, OMIM_ID
     ##   Header2: genes, OMIM_phenotype, OMIM_inheritance
     
@@ -78,19 +180,7 @@ proc checkOMIMfile {} {
     ReplaceTextInFile "genes\tOMIM_phenotype\tOMIM_inheritance" $OMIMfile2Formatted
     
     
-    # Genomic coordinates are available in GRCh38 in "genemap2.txt"
-    # Memorize the gene coordinates in GRCh38
-    # => Permit to check the association "OMIM ID / gene" (only for validated genomic coordinates. cf issues 156 + 132)
-    set geneCoordFile "$g_AnnotSV(annotationsDir)/Annotations_$g_AnnotSV(organism)/Genes/GRCh38/genes.$g_AnnotSV(tx).sorted.bed"
-    foreach L [LinesFromFile $geneCoordFile] {
-        set chrom [lindex $L 0]
-        set start [lindex $L 1]
-        set end [lindex $L 2]
-        set geneTmp [lindex $L 4]
-        set coord($geneTmp) "$chrom $start $end"
-    }
-    
-    # Parsing of $OMIMfileDownloaded
+    # Parsing of the GRCh38 $OMIMfileDownloaded
     foreach L [LinesFromFile $OMIMfileDownloaded] {
         
         set Ls [split $L "\t"]
@@ -150,9 +240,9 @@ proc checkOMIMfile {} {
         }
         if {[regexp "^#" $L]} {continue}
         
-        regsub "chr" [lindex $Ls $i_chrom] "" trueChrom
-        set trueStart [lindex $Ls $i_start]
-        set trueEnd [lindex $Ls $i_end]
+        regsub "chr" [lindex $Ls $i_chrom] "" trueChromOMIM
+        set trueStartOMIM [lindex $Ls $i_start]
+        set trueEndOMIM [lindex $Ls $i_end]
         
         set gene1 [lindex $Ls $i_gene1]
         regsub -all " " $gene1 "" gene1
@@ -172,17 +262,26 @@ proc checkOMIMfile {} {
         foreach gTmp $allGenesTmp {
             if {$gTmp eq ""} {continue}
             
-            if {[info exists coord($gTmp)]} {
-                set chrom [lindex $coord($gTmp) 0]
-                set start [lindex $coord($gTmp) 1]
-                set end [lindex $coord($gTmp) 2]
-                if {$trueChrom ne $chrom} {continue}
-                if {($start < $trueStart && $end > $trueStart) || ($start > $trueStart && $start < $trueEnd)} {
-                    lappend allGenes $gTmp
+            if {[info exists g_L_coord($gTmp)]} {
+                foreach coord $g_L_coord($gTmp) {
+                    set chrom [lindex $coord 0]
+                    set start [lindex $coord 1]
+                    set end [lindex $coord 2]
+                    if {$trueChromOMIM ne $chrom} {continue}
+                    if {($start < $trueStartOMIM && $end > $trueStartOMIM) || ($start > $trueStartOMIM && $start < $trueEndOMIM)} {
+                        lappend allGenes $gTmp
+                        # Add the alias for genes validated with coordinates
+                        if {[info exists g_alias($gTmp)]} {
+                            lappend allGenes {*}$g_alias($gTmp)
+                        }
+                        break
+                    }
                 }
             }
         }
         if {$allGenes eq ""} {continue}
+        set allGenes [lsort -unique $allGenes]
+        
         set mim [lindex $Ls $i_mim]
         set phenoTmp [lindex $Ls $i_pheno]
         regsub -all -nocase "Autosomal dominant" $phenoTmp "AD" phenoTmp
@@ -254,7 +353,8 @@ proc checkOMIMfile {} {
 proc checkMorbidfile {} {
     
     global g_AnnotSV
-    
+    global g_alias
+    global g_L_coord
     
     set omimDir "$g_AnnotSV(annotationsDir)/Annotations_$g_AnnotSV(organism)/Gene-based/OMIM"
     
@@ -295,16 +395,7 @@ proc checkMorbidfile {} {
         ##   Header: genes, OMIM_morbid
         ## - Create the 'date'_morbidCandidate.tsv.gz file.
         ##   Header: genes, OMIM_morbid_candidate
-       
-		# Memorize the link NCBIgeneID-GeneName
-	    set NCBIgeneDir "$g_AnnotSV(annotationsDir)/Annotations_$g_AnnotSV(organism)/Gene-based/NCBIgeneID"
-        foreach L [LinesFromFile "$NCBIgeneDir/geneSymbol_NCBIgeneID.tsv"] {
-			set gene [lindex $L 0]
-			set NCBIgeneID [lindex $L 1] 
-			set NCBIgeneIDfor($gene) $NCBIgeneID
-			lappend L_genesFor($NCBIgeneID) $gene
-		}
-
+        
         set MorbidFileFormatted "$omimDir/[clock format [clock seconds] -format "%Y%m%d"]_morbid.tsv"
         set MorbidCandidateFileFormatted "$omimDir/[clock format [clock seconds] -format "%Y%m%d"]_morbidCandidate.tsv"
         puts "\t...creation of [file tail $MorbidFileFormatted.gz] and [file tail $MorbidCandidateFileFormatted] ([clock format [clock seconds] -format "%B %d %Y - %H:%M"])"
@@ -355,17 +446,17 @@ proc checkMorbidfile {} {
                 if {$g eq ""} {continue}
                 ## "{ }", indicate mutations that contribute to susceptibility to multifactorial disorders (e.g., diabetes, asthma) or to susceptibility to infection (e.g., malaria).
                 ## "?", before the phenotype name indicates that the relationship between the phenotype and gene is provisional.
-
+                
                 # Add the gene names (approved symbol + other related symbol)
                 if {[regexp "^{.+}|^\\\?" $pheno]} {
-					if {[info exists NCBIgeneIDfor($g)]} {
-						lappend L_morbidCandidate {*}$L_genesFor($NCBIgeneIDfor($g))
-					} else {
-						lappend L_morbidCandidate $g
-					}
+                    if {[info exists g_alias($g)]} {
+                        lappend L_morbidCandidate {*}$g_alias($g)
+                    } else {
+                        lappend L_morbidCandidate $g
+                    }
                 } else {
-                    if {[info exists NCBIgeneIDfor($g)]} {
-						lappend L_morbid {*}$L_genesFor($NCBIgeneIDfor($g))
+                    if {[info exists g_alias($g)]} {
+                        lappend L_morbid {*}$g_alias($g)
                     } else {
                         lappend L_morbid $g
                     }
@@ -375,10 +466,12 @@ proc checkMorbidfile {} {
         
         # creation of $MorbidFileFormatted.gz
         set L_morbid [lsort -unique $L_morbid]
-        ## creted header: genes, OMIM_morbid
+        
+        ## created header: genes, OMIM_morbid
         foreach g $L_morbid {
             WriteTextInFile "$g\tyes" $MorbidFileFormatted
         }
+        
         if {[catch {exec gzip $MorbidFileFormatted} Message]} {
             puts "-- checkMorbidfile --"
             puts "gzip $MorbidFileFormatted"
@@ -399,6 +492,10 @@ proc checkMorbidfile {} {
         
         file delete -force $MorbidFileDownloaded
     }
+    
+    # Defined in memorizeGeneNameAlias
+    unset g_alias
+    unset g_L_coord
 }
 
 

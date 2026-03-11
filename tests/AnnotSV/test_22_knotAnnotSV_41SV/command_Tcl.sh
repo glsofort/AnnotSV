@@ -29,12 +29,13 @@ fi
 # Check 1: file containing different SV types: "test.41_SV.bed"
 ###############################################################
 ###############################################################
+mkdir -p ./output
 rm -f "./output/test.41_SV_tcl.annotated.tsv"
 $ANNOTSV/bin/AnnotSV -SVinputFile "./input/test.41_SV.bed" -svtBedCol 4 -outputFile "./output/test.41_SV_tcl.annotated.tsv" -hpo "HP:0001156,HP:0001363,HP:0011304,HP:0010055" -genomeBuild GRCh37
 
 for v in `$cut ./output/test.41_SV_tcl.annotated.tsv "ACMG_class" | sort -u`
 do
-        if ! exists_in_list "1 3 5 ACMG_class full=1 full=3 full=5 full=NA NA" " " "$v"
+        if ! exists_in_list "1 2 3 5 ACMG_class full=1 full=2 full=3 full=5 full=NA NA" " " "$v"
         then
                 echo "Error with ./input/test.41_SV.bed"
                 echo "error 1"

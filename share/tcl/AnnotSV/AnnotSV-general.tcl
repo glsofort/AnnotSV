@@ -1,9 +1,9 @@
 ############################################################################################################
-# AnnotSV 3.4.2                                                                                            #
+# AnnotSV 3.5.5                                                                                            #
 #                                                                                                          #
 # AnnotSV: An integrated tool for Structural Variations annotation and ranking                             #
 #                                                                                                          #
-# Copyright (C) 2017-2024 Veronique Geoffroy (veronique.geoffroy@inserm.fr)                                #
+# Copyright (C) 2017-present Veronique Geoffroy (veronique.geoffroy@inserm.fr)                             #
 #                                                                                                          #
 # This is part of AnnotSV source code.                                                                     #
 #                                                                                                          #
@@ -247,13 +247,13 @@ return $toreturn
 
 
 proc RemoveRedundancyWithoutSorting {List} {
-    set newList {}
-    foreach element $List {
-        if {[lsearch -exact $newList "$element"] eq -1} {
-            lappend newList $element
-        }
+set newList {}
+foreach element $List {
+    if {[lsearch -exact $newList "$element"] eq -1} {
+        lappend newList $element
     }
-	return $newList
+}
+return $newList
 }
 
 

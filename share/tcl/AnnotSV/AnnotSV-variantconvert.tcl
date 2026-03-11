@@ -1,9 +1,9 @@
 ############################################################################################################
-# AnnotSV 3.4.2                                                                                            #
+# AnnotSV 3.5.5                                                                                            #
 #                                                                                                          #
 # AnnotSV: An integrated tool for Structural Variations annotation and ranking                             #
 #                                                                                                          #
-# Copyright (C) 2017-2024 Veronique Geoffroy (veronique.geoffroy@inserm.fr)                                #
+# Copyright (C) 2017-present Veronique Geoffroy (veronique.geoffroy@inserm.fr)                             #
 #                                                                                                          #
 # This is part of AnnotSV source code.                                                                     #
 #                                                                                                          #
@@ -37,13 +37,13 @@ proc checkVariantconvertConfigfile {} {
         foreach formatFile {bed vcf} {
             
             set configfile "$g_AnnotSV(variantconvertDir)/src/variantconvert/configs/$g_AnnotSV(genomeBuild)/annotsv3_from_$formatFile.json"
-
+            
             if {$g_AnnotSV(variantconvertMode) eq "combined"} {
-				set localConfigfile "$g_AnnotSV(variantconvertDir)/src/variantconvert/configs/$g_AnnotSV(genomeBuild)/annotsv3_from_$formatFile.combined.local.json"
-		    } elseif {$g_AnnotSV(variantconvertMode) eq "full"} {
-			    set localConfigfile "$g_AnnotSV(variantconvertDir)/src/variantconvert/configs/$g_AnnotSV(genomeBuild)/annotsv3_from_$formatFile.full.local.json"
-		    } elseif {$g_AnnotSV(variantconvertMode) eq "fullsplit"} {
-			    set localConfigfile "$g_AnnotSV(variantconvertDir)/src/variantconvert/configs/$g_AnnotSV(genomeBuild)/annotsv3_from_$formatFile.fullsplit.local.json"
+                set localConfigfile "$g_AnnotSV(variantconvertDir)/src/variantconvert/configs/$g_AnnotSV(genomeBuild)/annotsv3_from_$formatFile.combined.local.json"
+            } elseif {$g_AnnotSV(variantconvertMode) eq "full"} {
+                set localConfigfile "$g_AnnotSV(variantconvertDir)/src/variantconvert/configs/$g_AnnotSV(genomeBuild)/annotsv3_from_$formatFile.full.local.json"
+            } elseif {$g_AnnotSV(variantconvertMode) eq "fullsplit"} {
+                set localConfigfile "$g_AnnotSV(variantconvertDir)/src/variantconvert/configs/$g_AnnotSV(genomeBuild)/annotsv3_from_$formatFile.fullsplit.local.json"
             }
             
             if {$g_AnnotSV(annotationsDir) ne ""} {
@@ -54,18 +54,37 @@ proc checkVariantconvertConfigfile {} {
             
             set distributedPathLine "\"path\": \".*\","
             set newPathLine         "\"path\": \"$pathDir/Annotations_Human/BreakpointsAnnotations/GCcontent/$g_AnnotSV(genomeBuild)/$g_AnnotSV(genomeBuild)_chromFa.fasta\","
-
+            
             set distributedRefLine  "\"##reference=file:.*\""
             set newRefLine          "\"##reference=file:$pathDir/Annotations_Human/BreakpointsAnnotations/GCcontent/$g_AnnotSV(genomeBuild)/$g_AnnotSV(genomeBuild)_chromFa.fasta\""
-
+            
             set distributedModeLine  "\"mode\": \"combined\","
             set newfullModeLine      "\"mode\": \"full\","
             set newfullsplitModeLine "\"mode\": \"full\\&split\","
-
-            # 1 - AnnotSV install with the root user
-            # 2 - AnnotSV run with non-root user
-            # => The $localConfigfile can not be created by a non-root user. This file should exists with 777 permissions
-            if {![file exists $localConfigfile] || [file size $localConfigfile] eq 0} {
+            
+            # 1 - AnnotSV install done with the "root" user
+            # 2 - AnnotSV run with "non-root" user 
+			# (or vice versa)
+            # => The $localConfigfile can not be created by a non-root user. The "configs" dir should exists with 777 permissions (Done in the Makefile)
+            
+            # If the user defined a wrong "-annotationsDir" during the first execution of AnnotSV (using the -vcf 1 parameter), the $localConfigfile need to be removed then recomputed.
+            if {[file exists $localConfigfile]} {
+                set testPathExists 0
+                set testRefExists 0
+                foreach L [LinesFromFile $localConfigfile] {
+                    if {[regexp "\"path\": \"(.*)\"," $L match path]} {
+                        if {[file exists $path]} {set testPathExists 1}
+                    }
+                    if {[regexp "\"##reference=file:(.*)\"" $L match ref]} {
+                        if {[file exists $ref]} {set testRefExists 1}
+                    }
+                }
+                if {$testPathExists eq 0 || $testRefExists eq 0} {
+                    file delete -force $localConfigfile
+                }
+            }
+            # If the file has been deleted or does not yet exist:
+            if {![file exists $localConfigfile]} {
                 set L_Lines {}
                 foreach L [LinesFromFile $configfile] {
                     if {[regexp "$distributedPathLine" $L]} {
@@ -75,16 +94,16 @@ proc checkVariantconvertConfigfile {} {
                         regsub "$distributedRefLine" $L "$newRefLine" L
                     }
                     if {[regexp "$distributedModeLine" $L]} {
-						if {$g_AnnotSV(variantconvertMode) eq "full"} {
-	                        regsub "$distributedModeLine" $L "$newfullModeLine" L
-						} elseif {$g_AnnotSV(variantconvertMode) eq "fullsplit"} {
+                        if {$g_AnnotSV(variantconvertMode) eq "full"} {
+                            regsub "$distributedModeLine" $L "$newfullModeLine" L
+                        } elseif {$g_AnnotSV(variantconvertMode) eq "fullsplit"} {
                             regsub "$distributedModeLine" $L "$newfullsplitModeLine" L
-						}
-					}
-                    lappend L_Lines $L 
-				}
-				ReplaceTextInFile [join $L_Lines "\n"] $localConfigfile
-			}
+                        }
+                    }
+                    lappend L_Lines $L
+                }
+                ReplaceTextInFile [join $L_Lines "\n"] $localConfigfile
+            }
         }
         
         # - Check if the "pip install -e ." command was already run
@@ -92,20 +111,34 @@ proc checkVariantconvertConfigfile {} {
         
         # => Can be done during the installation with the Makefile (if the python environment is OK)
         set currentDir [pwd]
+        set flagFile "$g_AnnotSV(variantconvertDir)/pipinstall.flag"
+		set vcDone 0
         catch {
-            if {![file exists $g_AnnotSV(variantconvertDir)/pipinstall.flag]} {
+            if {![file exists $flagFile] || ![regexp -nocase "Successfully installed variantconvert" [ContentFromFile $flagFile]]} {
                 cd $g_AnnotSV(variantconvertDir)
-                if {[catch {exec pip3 install -e .}]} {
+                if {[catch {exec pip3 install -e .} Message]} {
+                    WriteTextInFile "$Message" $flagFile
+                    WriteTextInFile "\n##############################################\n\n" $flagFile
                     if {[catch {exec pip install -e .} Message]} {
-                        WriteTextInFile "$Message" $g_AnnotSV(variantconvertDir)/pipinstall.flag
+                        WriteTextInFile "$Message" $flagFile
+	                    WriteTextInFile "\n##############################################\n\n" $flagFile
+						if {[catch {exec python -m pip install -e .} Message]} {
+		                    WriteTextInFile "$Message" $flagFile
+							WriteTextInFile "\n##############################################\n\n" $flagFile
+						} else {
+							set vcDone 1
+						}
                     } else {
-                        WriteTextInFile "Done" $g_AnnotSV(variantconvertDir)/pipinstall.flag
-                    }
+						set vcDone 1
+					}
                 } else {
-                    WriteTextInFile "Done" $g_AnnotSV(variantconvertDir)/pipinstall.flag
-                }
+					set vcDone 1
+				}
             }
         }
+		if {$vcDone} {
+			WriteTextInFile "Done" $flagFile
+		}
         cd $currentDir
     }
 }
@@ -126,36 +159,35 @@ proc runVariantconvert {outputFile} {
     }
     
     puts "...creation of the VCF output file: $VCFoutputFile"
-    puts "   AnnotSV relies on the variantconvert tool ${version}(https://github.com/SamuelNicaise/variantconvert)."
-    puts "   A minimal Python 3.8 installation is required, as well as the natsort, panda and pyfaidx Python modules."
+    puts "   AnnotSV relies on the variantconvert tool ${version}(https://github.com/SamuelNicaise/variantconvert)"
     
     regsub "\.vcf$" $VCFoutputFile ".variantconvert.log" LogFile
     
-
-	# run variantconvert
-	####################
-
+    
+    # run variantconvert
+    ####################
+    
     if {[regexp -nocase "\\.vcf(.gz)?$" $g_AnnotSV(SVinputFile)]} {
-
+        
         ## SVinputfile is a VCF
-		#######################
-
-	    # configfile definition
-	    if {$g_AnnotSV(variantconvertMode) eq "combined"} {
-	        set localConfigfile "$g_AnnotSV(variantconvertDir)/src/variantconvert/configs/$g_AnnotSV(genomeBuild)/annotsv3_from_vcf.combined.local.json"
-	    } elseif {$g_AnnotSV(variantconvertMode) eq "full"} {
-	        set localConfigfile "$g_AnnotSV(variantconvertDir)/src/variantconvert/configs/$g_AnnotSV(genomeBuild)/annotsv3_from_vcf.full.local.json"
-	    } elseif {$g_AnnotSV(variantconvertMode) eq "fullsplit"} {
-	        set localConfigfile "$g_AnnotSV(variantconvertDir)/src/variantconvert/configs/$g_AnnotSV(genomeBuild)/annotsv3_from_vcf.fullsplit.local.json"
-	    }
-
+        #######################
+        
+        # configfile definition
+        if {$g_AnnotSV(variantconvertMode) eq "combined"} {
+            set localConfigfile "$g_AnnotSV(variantconvertDir)/src/variantconvert/configs/$g_AnnotSV(genomeBuild)/annotsv3_from_vcf.combined.local.json"
+        } elseif {$g_AnnotSV(variantconvertMode) eq "full"} {
+            set localConfigfile "$g_AnnotSV(variantconvertDir)/src/variantconvert/configs/$g_AnnotSV(genomeBuild)/annotsv3_from_vcf.full.local.json"
+        } elseif {$g_AnnotSV(variantconvertMode) eq "fullsplit"} {
+            set localConfigfile "$g_AnnotSV(variantconvertDir)/src/variantconvert/configs/$g_AnnotSV(genomeBuild)/annotsv3_from_vcf.fullsplit.local.json"
+        }
+        
         set command "python3 $g_AnnotSV(variantconvertDir)/src/variantconvert convert -i $outputFile -o $VCFoutputFile -c $localConfigfile"
-
+        
     } else {
-
+        
         ## SVinputfile is a BED)
-		########################
-
+        ########################
+        
         # configfile definition
         if {$g_AnnotSV(variantconvertMode) eq "combined"} {
             set localConfigfile "$g_AnnotSV(variantconvertDir)/src/variantconvert/configs/$g_AnnotSV(genomeBuild)/annotsv3_from_bed.combined.local.json"
@@ -164,7 +196,7 @@ proc runVariantconvert {outputFile} {
         } elseif {$g_AnnotSV(variantconvertMode) eq "fullsplit"} {
             set localConfigfile "$g_AnnotSV(variantconvertDir)/src/variantconvert/configs/$g_AnnotSV(genomeBuild)/annotsv3_from_bed.fullsplit.local.json"
         }
-
+        
         if {$g_AnnotSV(svtBEDcol) == -1 } {
             puts "   WARNING: With a \"BED\" SV input file, the user has to define the -svtBEDcol option."
             puts "            => could not create the VCF output file:"
@@ -178,15 +210,14 @@ proc runVariantconvert {outputFile} {
     # variantconvert output
     #######################
     catch {eval exec $command} Message
-	regsub -all "FutureWarning: Setting an item of incompatible dtype is deprecated and will raise in a future error" $Message "..." MessageReg  
+    regsub -all "FutureWarning: Setting an item of incompatible dtype is deprecated and will raise in a future error" $Message "..." MessageReg
     if {[regexp -nocase "error" $MessageReg]} {
+        puts "   (a minimal Python 3.8 installation is required, as well as the natsort, panda and pyfaidx Python modules)"
         puts "Error:"
+        puts "   => cf $LogFile"
     }
     ReplaceTextInFile "$command\n\n$Message" $LogFile
-    puts "   => cf $LogFile"
     
     return
 }
-
-
 

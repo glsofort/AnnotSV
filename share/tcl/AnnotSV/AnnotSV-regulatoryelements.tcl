@@ -1,9 +1,9 @@
 ############################################################################################################
-# AnnotSV 3.4.2                                                                                            #
+# AnnotSV 3.5.5                                                                                            #
 #                                                                                                          #
 # AnnotSV: An integrated tool for Structural Variations annotation and ranking                             #
 #                                                                                                          #
-# Copyright (C) 2017-2024 Veronique Geoffroy (veronique.geoffroy@inserm.fr)                                #
+# Copyright (C) 2017-present Veronique Geoffroy (veronique.geoffroy@inserm.fr)                             #
 #                                                                                                          #
 # This is part of AnnotSV source code.                                                                     #
 #                                                                                                          #
@@ -120,7 +120,7 @@ proc checkPromoterFile {} {
         # Sorting of the bedfile:
         # Intersection with very large files can cause trouble with excessive memory usage.
         # A presort of the bed files by chromosome and then by start position combined with the use of the -sorted option will invoke a memory-efficient algorithm.
-        set sortTmpFile "$g_AnnotSV(outputDir)/[clock format [clock seconds] -format "%Y%m%d-%H%M%S"]_sort.tmp.bash"
+        set sortTmpFile "$g_AnnotSV(outputDir)/[clock format [clock seconds] -format "%Y%m%d-%H%M%S"]_[pid]_sort.tmp.bash"
         ReplaceTextInFile "#!/bin/bash" $sortTmpFile
         WriteTextInFile "# The locale specified by the environment can affects the traditional sort order. We need to use native byte values." $sortTmpFile
         WriteTextInFile "export LC_ALL=C" $sortTmpFile
@@ -258,7 +258,7 @@ proc checkEAfiles {} {
     # Intersection with very large files can cause trouble with excessive memory usage.
     # A presort of the bed files by chromosome and then by start position combined with the use of the -sorted option will invoke a memory-efficient algorithm.
     # RefSeq
-    set sortTmpFile "$g_AnnotSV(outputDir)/[clock format [clock seconds] -format "%Y%m%d-%H%M%S"]_sort.tmp.bash"
+    set sortTmpFile "$g_AnnotSV(outputDir)/[clock format [clock seconds] -format "%Y%m%d-%H%M%S"]_[pid]_sort.tmp.bash"
     ReplaceTextInFile "#!/bin/bash" $sortTmpFile
     WriteTextInFile "# The locale specified by the environment can affects the traditional sort order. We need to use native byte values." $sortTmpFile
     WriteTextInFile "export LC_ALL=C" $sortTmpFile
@@ -274,7 +274,7 @@ proc checkEAfiles {} {
     file delete -force $sortTmpFile
     file delete -force $EARefSeqFileFormattedGRCh37.tmp
     # ENSEMBL
-    set sortTmpFile "$g_AnnotSV(outputDir)/[clock format [clock seconds] -format "%Y%m%d-%H%M%S"]_sort.tmp.bash"
+    set sortTmpFile "$g_AnnotSV(outputDir)/[clock format [clock seconds] -format "%Y%m%d-%H%M%S"]_[pid]_sort.tmp.bash"
     ReplaceTextInFile "#!/bin/bash" $sortTmpFile
     WriteTextInFile "# The locale specified by the environment can affects the traditional sort order. We need to use native byte values." $sortTmpFile
     WriteTextInFile "export LC_ALL=C" $sortTmpFile
@@ -307,6 +307,10 @@ proc checkEAfiles {} {
 ##   - GeneHancer_elements.txt
 ##   - GeneHancer_gene_associations_scores.txt
 ##   - GeneHancer_hg19.txt
+##   Or:
+##   - GeneHancer_AnnotSV_elements_v5.25.txt
+##   - GeneHancer_AnnotSV_gene_associations_scores_v5.25.txt (association w/ or w/o "s")
+##   - GeneHancer_AnnotSV_hg19_v5.25.txt
 ##
 ## - Check and create if necessary:
 ##   - GH_RefSeq_GRCh37.sorted.bed
@@ -338,9 +342,12 @@ proc checkGHfiles {} {
     ## Check if GH file has been downloaded and unzipped
     ####################################################
     # Checks if the unzipped GH files exist:
-    set GHelementsF "$regElementsDir/GeneHancer_elements.txt" ;# GRCh38
-    set GHassociationsF "$regElementsDir/GeneHancer_gene_associations_scores.txt" ;# genes
-    set GHhg19F "$regElementsDir/GeneHancer_hg19.txt" ;# GRCh37
+    set GHelementsF [glob -no complain "$regElementsDir/GeneHancer*elements*.txt"] ;# GRCh38
+    set GHelementsF [expr {[llength $GHelementsF] > 0 ? [lindex $GHelementsF end] : "no_file_exists"}]
+    set GHassociationsF [glob -nocomplain "$regElementsDir/GeneHancer*gene_association*_scores*.txt"] ;# genes
+    set GHassociationsF [expr {[llength $GHassociationsF] > 0 ? [lindex $GHassociationsF end] : "no_file_exists"}]
+    set GHhg19F [glob -nocomplain "$regElementsDir/GeneHancer*hg19*.txt"] ;# GRCh37
+    set GHhg19F [expr {[llength $GHhg19F] > 0 ? [lindex $GHhg19F end] : "no_file_exists"}]
     foreach GHfile "$GHelementsF $GHassociationsF $GHhg19F" {
         if {![file exists $GHfile]} {
             if {$g_AnnotSV(organism) eq "Human"} {
@@ -469,7 +476,7 @@ proc checkGHfiles {} {
     # Intersection with very large files can cause trouble with excessive memory usage.
     # A presort of the bed files by chromosome and then by start position combined with the use of the -sorted option will invoke a memory-efficient algorithm.
     foreach GHfile {GHRefSeqFileFormatted37 GHRefSeqFileFormatted38 GHENSEMBLfileFormatted37 GHENSEMBLfileFormatted38} {
-        set sortTmpFile "$g_AnnotSV(outputDir)/[clock format [clock seconds] -format "%Y%m%d-%H%M%S"]_sort.tmp.bash"
+        set sortTmpFile "$g_AnnotSV(outputDir)/[clock format [clock seconds] -format "%Y%m%d-%H%M%S"]_[pid]_sort.tmp.bash"
         ReplaceTextInFile "#!/bin/bash" $sortTmpFile
         WriteTextInFile "# The locale specified by the environment can affects the traditional sort order. We need to use native byte values." $sortTmpFile
         WriteTextInFile "export LC_ALL=C" $sortTmpFile
@@ -643,7 +650,7 @@ proc checkMiRTargetLinkFiles {} {
     # A presort of the bed files by chromosome and then by start position combined with the use of the -sorted option will invoke a memory-efficient algorithm.
     foreach miRNAfile {miRNARefSeqFileFormatted38or10 miRNAENSEMBLfileFormatted38} {
         if {![file exists [set $miRNAfile].tmp]} {continue} ;# use for Mouse annotation, ENSEMBL annotation doesn't exist
-        set sortTmpFile "$g_AnnotSV(outputDir)/[clock format [clock seconds] -format "%Y%m%d-%H%M%S"]_sort.tmp.bash"
+        set sortTmpFile "$g_AnnotSV(outputDir)/[clock format [clock seconds] -format "%Y%m%d-%H%M%S"]_[pid]_sort.tmp.bash"
         ReplaceTextInFile "#!/bin/bash" $sortTmpFile
         WriteTextInFile "# The locale specified by the environment can affects the traditional sort order. We need to use native byte values." $sortTmpFile
         WriteTextInFile "export LC_ALL=C" $sortTmpFile
@@ -809,7 +816,7 @@ proc checkABCfiles {} {
     # Intersection with very large files can cause trouble with excessive memory usage.
     # A presort of the bed files by chromosome and then by start position combined with the use of the -sorted option will invoke a memory-efficient algorithm.
     # RefSeq
-    set sortTmpFile "$g_AnnotSV(outputDir)/[clock format [clock seconds] -format "%Y%m%d-%H%M%S"]_sort.tmp.bash"
+    set sortTmpFile "$g_AnnotSV(outputDir)/[clock format [clock seconds] -format "%Y%m%d-%H%M%S"]_[pid]_sort.tmp.bash"
     ReplaceTextInFile "#!/bin/bash" $sortTmpFile
     WriteTextInFile "# The locale specified by the environment can affects the traditional sort order. We need to use native byte values." $sortTmpFile
     WriteTextInFile "export LC_ALL=C" $sortTmpFile
@@ -825,7 +832,7 @@ proc checkABCfiles {} {
     file delete -force $sortTmpFile
     file delete -force $ABCRefSeqFileFormattedGRCh37.tmp
     # ENSEMBL
-    set sortTmpFile "$g_AnnotSV(outputDir)/[clock format [clock seconds] -format "%Y%m%d-%H%M%S"]_sort.tmp.bash"
+    set sortTmpFile "$g_AnnotSV(outputDir)/[clock format [clock seconds] -format "%Y%m%d-%H%M%S"]_[pid]_sort.tmp.bash"
     ReplaceTextInFile "#!/bin/bash" $sortTmpFile
     WriteTextInFile "# The locale specified by the environment can affects the traditional sort order. We need to use native byte values." $sortTmpFile
     WriteTextInFile "export LC_ALL=C" $sortTmpFile
@@ -1000,7 +1007,7 @@ proc checkMPRAfiles {} {
         # Intersection with very large files can cause trouble with excessive memory usage.
         # A presort of the bed files by chromosome and then by start position combined with the use of the -sorted option will invoke a memory-efficient algorithm.
         # RefSeq
-        set sortTmpFile "$g_AnnotSV(outputDir)/[clock format [clock seconds] -format "%Y%m%d-%H%M%S"]_sort.tmp.bash"
+        set sortTmpFile "$g_AnnotSV(outputDir)/[clock format [clock seconds] -format "%Y%m%d-%H%M%S"]_[pid]_sort.tmp.bash"
         ReplaceTextInFile "#!/bin/bash" $sortTmpFile
         WriteTextInFile "# The locale specified by the environment can affects the traditional sort order. We need to use native byte values." $sortTmpFile
         WriteTextInFile "export LC_ALL=C" $sortTmpFile
@@ -1016,7 +1023,7 @@ proc checkMPRAfiles {} {
         file delete -force $sortTmpFile
         file delete -force [set MPRARefSeqFileFormattedGRCh[set build]].tmp
         # ENSEMBL
-        set sortTmpFile "$g_AnnotSV(outputDir)/[clock format [clock seconds] -format "%Y%m%d-%H%M%S"]_sort.tmp.bash"
+        set sortTmpFile "$g_AnnotSV(outputDir)/[clock format [clock seconds] -format "%Y%m%d-%H%M%S"]_[pid]_sort.tmp.bash"
         ReplaceTextInFile "#!/bin/bash" $sortTmpFile
         WriteTextInFile "# The locale specified by the environment can affects the traditional sort order. We need to use native byte values." $sortTmpFile
         WriteTextInFile "export LC_ALL=C" $sortTmpFile
@@ -1143,26 +1150,26 @@ proc regulatoryElementsAnnotation {L_allGenesOverlapped} {
     
     ## Preparation of the phenotype-driven analysis (PhenoGenius + Exomiser)
     ## (to be able to access to the exomiser score of a gene with [ExomiserAnnotation $gName "score"])
-    ## (to be able to access to the PhenoGenius specificity of a gene with [PhenoGeniusAnnotation $gName "specificity"])
-    ####################################################################################################################
+    ## (to be able to access to the PhenoGenius specificity of a gene with [PhenoGeniusCliAnnotation $gName "specificity"])
+    #######################################################################################################################
     set L_allGenes $L_allGenesOverlapped
     lappend L_allGenes {*}$L_allRegulatedGenes
     set L_allGenes [lsort -unique $L_allGenes]
-	if {$g_AnnotSV(PhenoGenius)} {		
-		set L_NCBI_ID {}
-		foreach g $L_allGenes {
-			set NCBI_ID [searchforGeneID $g]
-			if {$NCBI_ID ne ""} {
-				lappend L_NCBI_ID $NCBI_ID
-			}
-		}
-		set L_NCBI_ID [lsort -unique $L_NCBI_ID]
-		runPhenoGenius "$L_allGenes" "$L_NCBI_ID" "$g_AnnotSV(hpo)"
+    if {$g_AnnotSV(PhenoGeniusCli)} {
+        set L_NCBI_ID {}
+        foreach g $L_allGenes {
+            set NCBI_ID [searchforNCBIGeneID $g]
+            if {$NCBI_ID ne ""} {
+                lappend L_NCBI_ID $NCBI_ID
+            }
+        }
+        set L_NCBI_ID [lsort -unique $L_NCBI_ID]
+        runPhenoGeniusCli "$L_allGenes" "$L_NCBI_ID" "$g_AnnotSV(hpo)"
     }
-	if {$g_AnnotSV(hpo) ne "" && $L_allGenes ne ""} {
+    if {$g_AnnotSV(hpo) ne "" && $L_allGenes ne ""} {
         runExomiser "$L_allGenes" "$g_AnnotSV(hpo)"
     }
-
+    
     ## HI/TS information for these regulated genes
     ## -> definition of g_HI($gene) and g_TS($gene)
     ###############################################
@@ -1193,9 +1200,9 @@ proc regulatoryElementsAnnotation {L_allGenesOverlapped} {
     ####################################
     foreach SV [array names g_genesReg] {
         set g_re($SV) ""
-		set re_priority($SV) ""
-		set re_other($SV) ""
-		set re_noann($SV) ""
+        set re_priority($SV) ""
+        set re_other($SV) ""
+        set re_noann($SV) ""
         foreach gName "$g_genesReg($SV)" {
             if {$g_AnnotSV(REselect2)} {
                 # AnnotSV restrict the report of the regulated genes to the ones not present in "Gene_name".
@@ -1205,15 +1212,15 @@ proc regulatoryElementsAnnotation {L_allGenesOverlapped} {
             catch {set HI "$g_HI($gName)"}
             set TS ""
             catch {set TS "$g_TS($gName)"}
-            if {$g_AnnotSV(PhenoGenius)} {
-                set PhenoGeniusSpecificity "[PhenoGeniusAnnotation $gName "specificity"]"
+            if {$g_AnnotSV(PhenoGeniusCli)} {
+                set PhenoGeniusSpecificity "[PhenoGeniusCliAnnotation $gName "specificity"]"
             } else {set PhenoGeniusSpecificity ""}
             if {$g_AnnotSV(hpo) ne ""} {
                 set exomiserScore "[ExomiserAnnotation $gName "score"]"
             } else {set exomiserScore ""}
             
             set lAnn {}
-			set priority 0
+            set priority 0
             if {$g_AnnotSV(REselect1)} {
                 # By default, only the genes entering in one of the following categories are reported:
                 #  - OMIM morbid genes
@@ -1223,7 +1230,7 @@ proc regulatoryElementsAnnotation {L_allGenesOverlapped} {
                 #  - User candidate genes
                 if {$HI eq "3"} {lappend lAnn "HI=$HI"}
                 if {$TS eq "3"} {lappend lAnn "TS=$TS"}
-				if {$PhenoGeniusSpecificity eq "A"} {lappend lAnn "PG=A"; set priority 1}
+                if {$PhenoGeniusSpecificity eq "A"} {lappend lAnn "PG=A"; set priority 1}
                 if {$exomiserScore ne "" && $exomiserScore > 0.7} {lappend lAnn "EX=$exomiserScore"; set priority 1}
                 if {[isMorbid $gName]} {lappend lAnn "morbid"}
                 if {[isCandidate $gName]} {lappend lAnn "candidate"}
@@ -1242,31 +1249,31 @@ proc regulatoryElementsAnnotation {L_allGenesOverlapped} {
                 lappend lAnn "RE=[join $g_reDB($SV,$gName) "+"]"
             }
             if {$lAnn ne ""} {
-				if {$priority} {
-					lappend re_priority($SV) "$gName ([join $lAnn "/"])"
-				} else {
-					lappend re_other($SV) "$gName ([join $lAnn "/"])"
-				}
+                if {$priority} {
+                    lappend re_priority($SV) "$gName ([join $lAnn "/"])"
+                } else {
+                    lappend re_other($SV) "$gName ([join $lAnn "/"])"
+                }
             } else {
                 lappend re_noann($SV) "$gName"
             }
         }
-	 
-		# We prioritarily keep RE with "PhenoGenius specificity = "A" or Exomiser gene score > 0.7" (for the ranking)
+        
+        # We prioritarily keep RE with "PhenoGenius specificity = "A" or Exomiser gene score > 0.7" (for the ranking)
         if {$re_priority($SV) ne ""} {
             set g_re($SV) $re_priority($SV)
         } elseif {$re_other($SV) ne ""} {
             lappend g_re($SV) {*}$re_other($SV)
         } elseif {$re_noann($SV) ne ""} {
             lappend g_re($SV) {*}$re_noann($SV)
-		}
-
+        }
+        
         # AnnotSV restricts the number of overlapping reported features to 50
         if {[llength $g_re($SV)] > 50} {
             set g_re($SV) "[join [lrange $g_re($SV) 0 49] ";"]..."
         } else {
             set g_re($SV) [join $g_re($SV) ";"]
-		}
+        }
     }
     
     return

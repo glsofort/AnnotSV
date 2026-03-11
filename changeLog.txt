@@ -1,9 +1,9 @@
 ############################################################################################################
-# AnnotSV 3.4.2                                                                                            #
+# AnnotSV 3.5.5                                                                                            #
 #                                                                                                          #
 # An integrated tool for Structural Variations annotation                                                  #
 #                                                                                                          #
-# Copyright (C) 2017-2024 Veronique Geoffroy (veronique.geoffroy@inserm.fr)                                #
+# Copyright (C) 2017-present Veronique Geoffroy (veronique.geoffroy@inserm.fr)                             #
 #                                                                                                          #
 ############################################################################################################
 
@@ -11,8 +11,61 @@
 For more details, please see the README file.
 
 
+March, 03, 2026 AnnotSV version 3.5.5
+	- Improvements of the Makefile (by @drew-sinha)
+		add flag for annotation file download, expose path to rest-prioritiser 
+		Annotations installion script no longer relies on AnnotSV make/install
+		application.properties now has version filled in programmatically
+		Non-destructive install; fix git install to allow repeats (still doesn't install for system apk builds)
 
-May, 14, 2027, AnnotSV version 3.4.2
+February, 27, 2026 AnnotSV version 3.5.4
+	- Improvements of the Makefile (by Bradford Powell @bpow-patch)
+		Update install-exomiser-2 command in Makefile to support PREFIX
+
+September, 12, 2025, AnnotSV version 3.5.3
+	- Improvments of the INSTALL_annotations.sh file to be version-controlled (issue 296)
+
+August, 29, 2025, AnnotSV version 3.5.2
+	- Improvements in the GeneHancer section (several sources authorized for the downloaded files)
+	- Improvements in the tests section (test_37_SVLEN) + Makefile 
+
+August, 21, 2025, AnnotSV version 3.5.1
+	- Add bugfix concerning the SV_length (issue 295)
+	- Update the exomiser application.properties file
+	- Update the variantconvert install
+	- Update the Copyright output
+
+July, 17, 2025, AnnotSV version 3.5
+	- Add the T2T-CHM13v2.0 human annotations
+	- Update GRCh38 and GRCh37 human annotations 
+	- Update the Exomiser install
+	- Add bugfix concerning the AnnotSV_ranking_criteria
+	- Add bugfix concerning the naming of temporary files. Add the pid in the file names
+	- Add bugfix concerning the boundary mismatch for ACMG scores 
+	- Improvements in the tests section
+	- Add the PacBio-CoLoRS Benign SV annotations (Long Read Sequencing Database, GRCh38, CHM13)
+	- Return 2 unique AnnotSV_Ids for two translocations starting at the same position but ending at a different position 
+
+March, 06, 2025, AnnotSV version 3.4.6
+	- Update the PhenoGenius install (Use of the client repo https://github.com/kyauy/PhenoGeniusCli: v.1.1.3) (issue 274)
+
+February, 27, 2025, AnnotSV version 3.4.5
+	- Update the PhenoGenius install (Use of the client repo https://github.com/kyauy/PhenoGeniusCli: v.1.1.2)
+	- Add the "-missingGTinSamplesid" option (to report or not sample IDs with missing alleles in the GT field (./. or .|.) in the "Samples_ID" output field)
+	- Fix a bug to set start position when converting from 0-based to 1-based format in some rare special cases (issue 266)
+	- Fix a bug concerning Mouse annotations (issue 257)
+
+September, 05, 2024, AnnotSV version 3.4.4
+	- Temporary fix for issues #239 and #250 (wrong PRDM10 line in the GenCC file)
+	  => Code to be removed after updating annotations
+
+August, 29, 2024, AnnotSV version 3.4.3
+	- New definition of alias gene symbols used in OMIM annotation files. 
+	  Keep only aliases found with the NCBI_gene_ID and validated with genomic locations
+	- Add a new check for the variantconvert configuration (issue 246)
+	- Fix a bug in the AnnotSV_ID setting when POS (e.g. 1) is contained in CHROM (e.g. 1)
+
+May, 14, 2024, AnnotSV version 3.4.2
 	- Fix a bug when setting the cytoband annotation for large SV (issue 234)
 	- Update the mm39 repeat annotations (issue 225)
 

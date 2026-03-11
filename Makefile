@@ -1,9 +1,9 @@
 ############################################################################################################
-# AnnotSV 3.4.2                                                                                            #
+# AnnotSV 3.5.5                                                                                            #
 #                                                                                                          #
 # AnnotSV: An integrated tool for Structural Variations annotation and ranking                             #
 #                                                                                                          #
-# Copyright (C) 2017-2024 Veronique Geoffroy (veronique.geoffroy@inserm.fr)                                #
+# Copyright (C) 2017-present Veronique Geoffroy (veronique.geoffroy@inserm.fr)                             #
 #                                                                                                          #
 # This is part of AnnotSV source code.                                                                     #
 #                                                                                                          #
@@ -21,7 +21,7 @@
 # along with this program; If not, see <http://www.gnu.org/licenses/>.                                     #
 ############################################################################################################
 
-SHELL = /bin/bash
+SHELL = /usr/bin/env bash
 
 
 DESTDIR              ?=
@@ -35,11 +35,14 @@ DOCDIR               := $(SHAREDIR)/doc
 BASHDIR              := $(SHAREDIR)/bash
 TESTSDIR             := $(PREFIX)/tests
 TCLVERSION           := tcl$(shell echo 'puts $${tcl_version};exit 0' | tclsh)
-TCLDIRDISTRIBUTED    := share/tcl
+TCLDIRDISTRIBUTED    := $(SHAREDIR)/tcl
 TCLDIR               := $(SHAREDIR)/$(TCLVERSION)
 PYTHONDIR            := $(SHAREDIR)/python3
 ANNOTSV              := AnnotSV
-VERSION              := 3.4.2
+JARDIR               := $(SHAREDIR)/$(ANNOTSV)/jar
+VERSION              := 3.5.5
+HUMANVERSION         := 3.5
+MOUSEVERSION         := 3.4.2
 RM                   := /bin/rm
 RMDIR                := /bin/rmdir
 MKDIR                := install -d
@@ -47,11 +50,16 @@ MV                   := /bin/mv
 CP                   := install -p -m 0644
 CPDIR                := /bin/cp -r
 CHMOD                := /bin/chmod -R 777
-CONFIGFILE           := etc/$(ANNOTSV)/configfile
+CONFIGFILE           := $(ETCDIR)/$(ANNOTSV)/configfile
 MAKEFILE             := Makefile
-PROPERTIES           := etc/$(ANNOTSV)/application.properties
-BASH_SCRIPTS         := $(shell find share/bash/$(ANNOTSV)/ -name '*.bash' 2> /dev/null)
+PROPERTIES           := $(ETCDIR)/$(ANNOTSV)/application.properties
+BASH_SCRIPTS         := $(shell find $(BASHDIR)/$(ANNOTSV)/ -name '*.bash' 2> /dev/null)
 DOCUMENTATIONS       := $(shell find License.txt changeLog.txt commandLineOptions.txt README.AnnotSV_*.pdf 2> /dev/null)
+VC_FLAG              := $(DESTDIR)$(PYTHONDIR)/variantconvert/pipinstall.flag
+VC_VERSION           := 2.0.1
+VC_CONFIGDIR         := $(DESTDIR)$(PYTHONDIR)/variantconvert/src/variantconvert/configs
+USEANNODIR           := #flag whether separate annotation resources directory needed (e.g. for HPC environvment)
+EXRP_FILE            := #optional filepath for previously downloaded rest-prioritiser
 
 # make install
 .PHONY: install
@@ -60,8 +68,8 @@ all: install-display install-documentationlight install-variantconvert install-d
 install: install-display install-documentationlight install-variantconvert install-done
 install-exomiser: install-exomiser-1 install-exomiser-3
 else
-all: install-display install-configfile install-makefile install-executable install-tcl-toolbox install-python-toolbox install-bash-toolbox install-doc install-others-doc install-variantconvert install-done
-install: install-display install-configfile install-makefile install-executable install-tcl-toolbox install-python-toolbox install-bash-toolbox install-doc install-others-doc install-variantconvert install-done
+all: install-display install-configfile install-makefile install-executable install-tcl-toolbox install-bash-toolbox install-doc install-others-doc install-variantconvert install-done
+install: install-display install-configfile install-makefile install-executable install-tcl-toolbox install-bash-toolbox install-doc install-others-doc install-variantconvert install-done
 install-exomiser: install-exomiser-1 install-exomiser-2 install-exomiser-3
 endif
 
@@ -75,8 +83,8 @@ install-display:
 
 install-documentationlight: $(DOCUMENTATIONS)
 	@echo ""
-	$(MV) $^ $(DESTDIR)$(DOCDIR)/$(ANNOTSV)
-	$(MV) $(TCLDIRDISTRIBUTED) $(TCLDIR)
+	$(CP) $^ $(DESTDIR)$(DOCDIR)/$(ANNOTSV)
+	$(CPDIR) $(TCLDIRDISTRIBUTED) $(TCLDIR)
 
 install-configfile: $(CONFIGFILE)
 	@echo ""
@@ -103,49 +111,50 @@ install-tcl-toolbox:
 	@echo "Tcl scripts installation"
 	@echo "------------------------"
 	$(MKDIR) $(DESTDIR)$(TCLDIR)/$(ANNOTSV)
-	cd share/tcl ; tar cf - $(ANNOTSV) | tar xf - -C $(DESTDIR)$(TCLDIR)/
-
-install-python-toolbox:
-	@echo ""
-	@echo "Python scripts installation"
-	@echo "---------------------------"
-	$(MKDIR) $(DESTDIR)$(PYTHONDIR)/variantconvert
-	cd share/python3 ; tar cf - variantconvert | tar xf - -C $(DESTDIR)$(PYTHONDIR)/
+	cd $(SHAREDIR)/tcl ; tar cf - $(ANNOTSV) | tar xf - -C $(DESTDIR)$(TCLDIR)/
 
 install-variantconvert:
 	@echo ""
 	@echo "variantconvert installation"
 	@echo "---------------------------"
-	touch $(DESTDIR)$(PYTHONDIR)/variantconvert/pipinstall.flag
-	chmod 777 $(DESTDIR)$(PYTHONDIR)/variantconvert/pipinstall.flag
-	pip3 install -e $(DESTDIR)$(PYTHONDIR)/variantconvert/. &> ./tmp.variantconvert.txt || pip install -e $(DESTDIR)$(PYTHONDIR)/variantconvert/. &> ./tmp.variantconvert.txt || rm -f $(DESTDIR)$(PYTHONDIR)/variantconvert/pipinstall.flag
-	rm -f ./tmp.variantconvert.txt
-	ls -l $(DESTDIR)$(PYTHONDIR)/variantconvert/pipinstall.flag || echo "variantconvert not installed"
-	touch $(DESTDIR)$(PYTHONDIR)/variantconvert/src/variantconvert/configs/GRCh37/annotsv3_from_bed.combined.local.json
-	touch $(DESTDIR)$(PYTHONDIR)/variantconvert/src/variantconvert/configs/GRCh37/annotsv3_from_bed.full.local.json
-	touch $(DESTDIR)$(PYTHONDIR)/variantconvert/src/variantconvert/configs/GRCh37/annotsv3_from_bed.fullsplit.local.json
-	touch $(DESTDIR)$(PYTHONDIR)/variantconvert/src/variantconvert/configs/GRCh37/annotsv3_from_vcf.combined.local.json
-	touch $(DESTDIR)$(PYTHONDIR)/variantconvert/src/variantconvert/configs/GRCh37/annotsv3_from_vcf.full.local.json
-	touch $(DESTDIR)$(PYTHONDIR)/variantconvert/src/variantconvert/configs/GRCh37/annotsv3_from_vcf.fullsplit.local.json
-	touch $(DESTDIR)$(PYTHONDIR)/variantconvert/src/variantconvert/configs/GRCh38/annotsv3_from_bed.combined.local.json
-	touch $(DESTDIR)$(PYTHONDIR)/variantconvert/src/variantconvert/configs/GRCh38/annotsv3_from_bed.full.local.json
-	touch $(DESTDIR)$(PYTHONDIR)/variantconvert/src/variantconvert/configs/GRCh38/annotsv3_from_bed.fullsplit.local.json
-	touch $(DESTDIR)$(PYTHONDIR)/variantconvert/src/variantconvert/configs/GRCh38/annotsv3_from_vcf.combined.local.json
-	touch $(DESTDIR)$(PYTHONDIR)/variantconvert/src/variantconvert/configs/GRCh38/annotsv3_from_vcf.full.local.json
-	touch $(DESTDIR)$(PYTHONDIR)/variantconvert/src/variantconvert/configs/GRCh38/annotsv3_from_vcf.fullsplit.local.json
-	$(CHMOD) $(DESTDIR)$(PYTHONDIR)/variantconvert/src/variantconvert/configs/GRCh37/annotsv3_from_bed.combined.local.json
-	$(CHMOD) $(DESTDIR)$(PYTHONDIR)/variantconvert/src/variantconvert/configs/GRCh37/annotsv3_from_bed.full.local.json
-	$(CHMOD) $(DESTDIR)$(PYTHONDIR)/variantconvert/src/variantconvert/configs/GRCh37/annotsv3_from_bed.fullsplit.local.json
-	$(CHMOD) $(DESTDIR)$(PYTHONDIR)/variantconvert/src/variantconvert/configs/GRCh37/annotsv3_from_vcf.combined.local.json
-	$(CHMOD) $(DESTDIR)$(PYTHONDIR)/variantconvert/src/variantconvert/configs/GRCh37/annotsv3_from_vcf.full.local.json
-	$(CHMOD) $(DESTDIR)$(PYTHONDIR)/variantconvert/src/variantconvert/configs/GRCh37/annotsv3_from_vcf.fullsplit.local.json
-	$(CHMOD) $(DESTDIR)$(PYTHONDIR)/variantconvert/src/variantconvert/configs/GRCh38/annotsv3_from_bed.combined.local.json
-	$(CHMOD) $(DESTDIR)$(PYTHONDIR)/variantconvert/src/variantconvert/configs/GRCh38/annotsv3_from_bed.full.local.json
-	$(CHMOD) $(DESTDIR)$(PYTHONDIR)/variantconvert/src/variantconvert/configs/GRCh38/annotsv3_from_bed.fullsplit.local.json
-	$(CHMOD) $(DESTDIR)$(PYTHONDIR)/variantconvert/src/variantconvert/configs/GRCh38/annotsv3_from_vcf.combined.local.json
-	$(CHMOD) $(DESTDIR)$(PYTHONDIR)/variantconvert/src/variantconvert/configs/GRCh38/annotsv3_from_vcf.full.local.json
-	$(CHMOD) $(DESTDIR)$(PYTHONDIR)/variantconvert/src/variantconvert/configs/GRCh38/annotsv3_from_vcf.fullsplit.local.json
+	
+	@if [ -d $(DESTDIR)$(PYTHONDIR)/variantconvert ]; then \
+		echo "variantconvert directory found; purging locally before re-installing."; \
+		rm -rf $(DESTDIR)$(PYTHONDIR)/variantconvert/; \
+	fi
+	git clone --branch $(VC_VERSION) https://github.com/SamuelNicaise/variantconvert.git $(DESTDIR)$(PYTHONDIR)/variantconvert/
 
+	touch $(VC_FLAG)
+	chmod 777 $(VC_FLAG)
+	pip3 install -e $(DESTDIR)$(PYTHONDIR)/variantconvert/. > ./tmp.variantconvert.txt 2>&1 \
+	|| pip install -e $(DESTDIR)$(PYTHONDIR)/variantconvert/. >> ./tmp.variantconvert.txt 2>&1 \
+	|| python -m pip install -e $(DESTDIR)$(PYTHONDIR)/variantconvert/. >> ./tmp.variantconvert.txt 2>&1 \
+	|| rm -f $(VC_FLAG)
+	@if [ -f $(VC_FLAG) ]; then \
+		echo "variantconvert installed"; \
+		$(CHMOD) ./tmp.variantconvert.txt; \
+		rm -f ./tmp.variantconvert.txt; \
+		$(CHMOD) $(VC_CONFIGDIR); \
+		$(MV) $(VC_CONFIGDIR)/hs1 $(VC_CONFIGDIR)/CHM13; \
+		for f in $(VC_CONFIGDIR)/CHM13/annotsv*; do \
+			case "$$f" in \
+				*.json) \
+					sed -i 's/"##contig=<ID=chr/"##contig=<ID=/g' "$$f" ;; \
+			esac; \
+		done; \
+		# Creation of the "*.local.json" files for Conda use. \
+		for genome in GRCh37 GRCh38 CHM13; do \
+			for source in bed vcf; do \
+				for type in combined full fullsplit; do \
+					echo "touch $(VC_CONFIGDIR)/$$genome/annotsv3_from_$$source.$$type.local.json" ; \
+					touch $(VC_CONFIGDIR)/$$genome/annotsv3_from_$$source.$$type.local.json; \
+					$(CHMOD) $(VC_CONFIGDIR)/$$genome/annotsv3_from_$$source.$$type.local.json; \
+				done; \
+			done; \
+		done; \
+	else \
+		echo "variantconvert not installed"; \
+	fi
 
 install-bash-toolbox: $(BASH_SCRIPTS)
 	@echo ""
@@ -161,7 +170,7 @@ install-doc: $(DOCUMENTATIONS)
 	$(MKDIR) $(DESTDIR)$(DOCDIR)/$(ANNOTSV)
 	$(CP) $^ $(DESTDIR)$(DOCDIR)/$(ANNOTSV)
 
-install-others-doc: share/doc/$(ANNOTSV)/Example
+install-others-doc: $(DESTDIR)$(DOCDIR)/$(ANNOTSV)/Example
 	$(CPDIR) $^ $(DESTDIR)$(DOCDIR)/$(ANNOTSV)
 
 install-done: 
@@ -177,43 +186,70 @@ install-done:
 # make install_organism_annotations
 install-all-annotations: install-human-annotation install-mouse-annotation                                     
 
-install-human-annotation: Annotations_Human_$(VERSION).tar.gz install-exomiser
+install-human-annotation: install-exomiser $(if $(USEANNODIR),,Annotations_Human_$(HUMANVERSION).tar.gz)
+ifndef USEANNODIR
 	@echo ""
 	@echo "Installation of human annotation:"
 	@echo ""
-	tar -xf Annotations_Human_$(VERSION).tar.gz -C $(DESTDIR)$(SHAREDIR)/$(ANNOTSV)/
-	$(RM) -rf Annotations_Human_$(VERSION).tar.gz
+	tar -xf Annotations_Human_$(HUMANVERSION).tar.gz -C $(DESTDIR)$(SHAREDIR)/$(ANNOTSV)/
+	$(RM) -rf Annotations_Human_$(HUMANVERSION).tar.gz
 	$(CHMOD) $(DESTDIR)$(SHAREDIR)/$(ANNOTSV)/Annotations_*
 	@echo ""
 	@echo "--> Human annotation installed"
+else
+	@echo ""
+	@echo "Flag for custom annotationDir; skipping local install of human annotations"
+	@echo ""
+endif
 
-install-exomiser-1: 2309_phenotype.zip
+install-exomiser-1: $(if $(USEANNODIR),,2406_phenotype.zip)
 	@echo ""
 	@echo "Installation of Exomiser data:"
 	@echo ""
-	$(MKDIR) -p $(DESTDIR)$(SHAREDIR)/$(ANNOTSV)/Annotations_Exomiser/2309
-	tar -xf 2309_hg19.tar.gz -C $(DESTDIR)$(SHAREDIR)/$(ANNOTSV)/Annotations_Exomiser/2309/
-	unzip 2309_phenotype.zip -d $(DESTDIR)$(SHAREDIR)/$(ANNOTSV)/Annotations_Exomiser/2309/
-	$(RM) -rf 2309_phenotype.zip
-	$(RM) -rf 2309_hg19.tar.gz
+	
+ifndef USEANNODIR
+	$(MKDIR) -p $(DESTDIR)$(SHAREDIR)/$(ANNOTSV)/Annotations_Exomiser/2406
+	unzip 2406_phenotype.zip -d $(DESTDIR)$(SHAREDIR)/$(ANNOTSV)/Annotations_Exomiser/2406/
+	$(RM) -rf 2406_phenotype.zip
+else
+	@echo ""
+	@echo "Flag for custom annotationDir; skipped Exomiser phenotypes local installation"
+	@echo ""
+endif
+	
+	$(MKDIR) -p $(DESTDIR)$(JARDIR)
+ifndef EXRP_FILE
+	curl -C - -LO https://github.com/exomiser/Exomiser/releases/download/14.1.0/exomiser-rest-prioritiser-14.1.0.jar
+	install -p -m 0755 exomiser-rest-prioritiser-14.1.0.jar $(DESTDIR)$(JARDIR)/
+	$(RM) exomiser-rest-prioritiser-14.1.0.jar
+else
+	@echo "Custom rest-priotiser path provided; creating symlink"
+	ln -sf $(EXRP_FILE) $(DESTDIR)$(JARDIR)/$(notdir $(EXRP_FILE))
+endif
 
 install-exomiser-2:
-	install -p -m 0755 $(PROPERTIES) $(DESTDIR)$(ETCDIR)/$(ANNOTSV)
-	$(CPDIR) share/AnnotSV/jar/ $(DESTDIR)$(SHAREDIR)/$(ANNOTSV)/
+	install -D -p -m 0755 $(PROPERTIES) $(DESTDIR)$(ETCDIR)/$(ANNOTSV)
 
 install-exomiser-3:
 	@echo ""
 	@echo "--> Exomiser data installed"
 
-install-mouse-annotation: Annotations_Mouse_$(VERSION).tar.gz 
+install-mouse-annotation: $(if $(USEANNODIR),,Annotations_Mouse_$(MOUSEVERSION).tar.gz) 
+ifndef USEANNODIR
 	@echo ""
 	@echo "Installation of mouse annotation:"
-	@echo ""
+	@echo ""	
 	$(MKDIR) $(DESTDIR)$(SHAREDIR)/$(ANNOTSV)/
-	tar -xf Annotations_Mouse_$(VERSION).tar.gz -C $(DESTDIR)$(SHAREDIR)/$(ANNOTSV)/
-	$(RM) -rf Annotations_Mouse_$(VERSION).tar.gz
+	tar -xf Annotations_Mouse_$(MOUSEVERSION).tar.gz -C $(DESTDIR)$(SHAREDIR)/$(ANNOTSV)/
+	$(RM) -rf Annotations_Mouse_$(MOUSEVERSION).tar.gz
 	@echo ""
 	@echo "--> Mouse annotation installed"
+else
+	@echo ""
+	@echo "Flag for custom annotationDir; skipping local install of mouse annotations"
+	@echo ""
+endif
+
 
 Annotations_%.tar.gz:
 	@echo ""
@@ -225,7 +261,6 @@ Annotations_%.tar.gz:
 	@echo ""
 	@echo "Download Exomiser supporting data files:"
 	@echo ""
-	curl -C - -LO https://www.lbgi.fr/~geoffroy/Annotations/2309_hg19.tar.gz
 	curl -C - -LO https://data.monarchinitiative.org/exomiser/data/$@
 
 
@@ -260,6 +295,7 @@ uninstall1:
 	$(RM) -rf $(DESTDIR)$(PREFIX)/Scoring_Criteria_AnnotSV_*.xlsx
 	$(RM) -rf $(DESTDIR)$(PREFIX)/.git
 	$(RM) -rf $(DESTDIR)$(PREFIX)/.gitignore
+	$(RM) -rf $(DESTDIR)$(PREFIX)/tmp.variantconvert.txt
 
 uninstall2:
 	$(RMDIR) --ignore-fail-on-non-empty $(DESTDIR)$(BINDIR) $(DESTDIR)$(BASHDIR) $(DESTDIR)$(TCLDIR) $(DESTDIR)$(PYTHONDIR) $(DESTDIR)$(DOCDIR) $(DESTDIR)$(SHAREDIR) $(DESTDIR)$(ETCDIR) $(DESTDIR)$(TESTSDIR)
