@@ -49,6 +49,10 @@ proc memorizeGeneNameAlias {} {
     # Here, we memorize the RefSeq/ENSEMBL CHM13 gene coordinates (more complete than the GRCh37 and GRCh38)
     # => Will permit to check the different alias of a unique gene (only for overlapping genomic coordinates. cf issues 156 + 132)
     set geneCoordFile "$g_AnnotSV(annotationsDir)/Annotations_$g_AnnotSV(organism)/Genes/CHM13/genes.$g_AnnotSV(tx).sorted.bed"
+    if {![file exists $geneCoordFile]} {
+        # Fall back to current genome build's gene file if CHM13 annotations are not installed
+        set geneCoordFile "$g_AnnotSV(annotationsDir)/Annotations_$g_AnnotSV(organism)/Genes/$g_AnnotSV(genomeBuild)/genes.$g_AnnotSV(tx).sorted.bed"
+    }
     foreach L [LinesFromFile $geneCoordFile] {
         set chrom [lindex $L 0]
         set start [lindex $L 1]
