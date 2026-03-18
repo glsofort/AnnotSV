@@ -78,8 +78,9 @@ proc searchforNCBIGeneID {geneName} {
     global geneID
     
     if {![array exists geneID]} {
-        
+
         set NCBIandHGNCgeneDir "$g_AnnotSV(annotationsDir)/Annotations_$g_AnnotSV(organism)/Gene-based/NCBIandHGNCgeneID"
+        if {![file exists "$NCBIandHGNCgeneDir/results.txt"]} { return "" }
         # Header:
         # HGNC ID   Approved symbol                   Previous symbols        Alias symbols   NCBI Gene ID
         # HGNC:5               A1BG                                                                      1

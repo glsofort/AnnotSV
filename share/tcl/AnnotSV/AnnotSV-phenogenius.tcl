@@ -84,7 +84,8 @@ proc runPhenoGeniusCli {L_Genes L_NCBI_ID L_HPO} {
     }
     
     if {![file exists $tmpResultsLogFile]} {set g_AnnotSV(PhenoGeniusCli) "0"; return}
-    
+    if {![file exists $tmpResultsFile]} {set g_AnnotSV(PhenoGeniusCli) "0"; return}
+
     foreach L [LinesFromFile $tmpResultsFile] {
         set Ls [split $L "\t"]
         # Header

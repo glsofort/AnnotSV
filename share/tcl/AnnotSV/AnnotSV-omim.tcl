@@ -79,6 +79,7 @@ proc memorizeGeneNameAlias {} {
     # Then, for gene names not present in the $geneCoordFile (previous symbol, alias), we use the NCBIgeneID to retrieve new alias
     # Memorize the link NCBIgeneID-GeneName
     set NCBIandHGNCgeneDir "$g_AnnotSV(annotationsDir)/Annotations_$g_AnnotSV(organism)/Gene-based/NCBIandHGNCgeneID"
+    if {![file exists "$NCBIandHGNCgeneDir/geneSymbol_NCBIandHGNCgeneID.tsv"]} { return }
     foreach L [LinesFromFile "$NCBIandHGNCgeneDir/geneSymbol_NCBIandHGNCgeneID.tsv"] {
         set gene [lindex $L 0]
         set NCBIgeneID [lindex $L 1]

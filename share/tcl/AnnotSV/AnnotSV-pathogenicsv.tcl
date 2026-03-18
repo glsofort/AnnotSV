@@ -288,6 +288,7 @@ proc checkClinGenHITS_pathogenicFile {genomeBuild} {
     
     ## ClinGenFileDownloaded1 parsing
     #################################
+    if {$ClinGenFileDownloaded1 ne ""} {
     set f [open "$ClinGenFileDownloaded1"]
     while {! [eof $f]} {
         set L [gets $f]
@@ -295,7 +296,7 @@ proc checkClinGenHITS_pathogenicFile {genomeBuild} {
         # Header 1:
         ###########
         #Gene Symbol    Gene ID cytoBand        Genomic Location        Haploinsufficiency Score        Haploinsufficiency Description  Haploinsufficiency PMID1        Haploinsufficiency PMID2        Haploinsufficiency PMID3        Haploinsufficiency PMID4        Haploinsufficiency PMID5        Haploinsufficiency PMID6        Triplosensitivity Score Triplosensitivity Description   Triplosensitivity PMID1 Triplosensitivity PMID2 Triplosensitivity PMID3 Triplosensitivity PMID4 Triplosensitivity PMID5 Triplosensitivity PMID6 Date Last Evaluated     Haploinsufficiency Disease ID   Triplosensitivity Disease ID
-        
+
         # Selection of the pathogenic variants to keep:
         ###############################################
         if {[regexp "(^#Gene Symbol)|(^#ISCA ID)" $L]} {
@@ -306,7 +307,7 @@ proc checkClinGenHITS_pathogenicFile {genomeBuild} {
             continue
         }
         if {[regexp "^#" $L]} {continue}
-        
+
         set ID [lindex $Ls $i_id]
         set coord [lindex $Ls $i_coord]
         regsub -all "(chr)| " $coord "" coord
@@ -325,19 +326,21 @@ proc checkClinGenHITS_pathogenicFile {genomeBuild} {
         }
     }
     close $f
+    }
     
     
     ## ClinGenFileDownloaded2 parsing
     #################################
+    if {$ClinGenFileDownloaded2 ne ""} {
     set f [open "$ClinGenFileDownloaded2"]
     while {! [eof $f]} {
         set L [gets $f]
         set Ls [split $L "\t"]
-        
+
         # Header 2:
         ###########
         #ISCA ID        ISCA Region Name        cytoBand        Genomic Location        Haploinsufficiency Score        Haploinsufficiency Description  Haploinsufficiency PMID1        Haploinsufficiency PMID2       Haploinsufficiency PMID3 Haploinsufficiency PMID4        Haploinsufficiency PMID5        Haploinsufficiency PMID6        Triplosensitivity Score Triplosensitivity Description   Triplosensitivity PMID1 Triplosensitivity PMID2 Triplosensitivity PMID3 Triplosensitivity PMID4 Triplosensitivity PMID5 Triplosensitivity PMID6 Date Last Evaluated     Haploinsufficiency Disease ID   Triplosensitivity Disease ID
-        
+
         # Selection of the pathogenic variants to keep:
         ###########################################
         if {[regexp "(^#Gene Symbol)|(^#ISCA ID)" $L]} {
@@ -349,7 +352,7 @@ proc checkClinGenHITS_pathogenicFile {genomeBuild} {
             continue
         }
         if {[regexp "^#" $L]} {continue}
-        
+
         set ID [lindex $Ls $i_id]
         set coord [lindex $Ls $i_coord]
         regsub -all "(chr)| " $coord "" coord
@@ -369,6 +372,7 @@ proc checkClinGenHITS_pathogenicFile {genomeBuild} {
         }
     }
     close $f
+    }
     
     
     # Writing:
