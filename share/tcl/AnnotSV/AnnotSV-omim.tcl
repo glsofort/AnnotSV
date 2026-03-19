@@ -498,9 +498,9 @@ proc checkMorbidfile {} {
         file delete -force $MorbidFileDownloaded
     }
     
-    # Defined in memorizeGeneNameAlias
-    unset g_alias
-    unset g_L_coord
+    # Defined in memorizeGeneNameAlias (may not exist if NCBI/HGNC data is missing)
+    catch {unset g_alias}
+    catch {unset g_L_coord}
 }
 
 
