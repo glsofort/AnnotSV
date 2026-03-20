@@ -770,15 +770,15 @@ proc poPathogenicSVannotation {SVchrom SVstart SVend} {
                 foreach svtype {"Gain" "Loss"} {
                     
                     # Keep only the user requested columns (defined in the configfile)
-                    if {[lsearch -regexp "$g_AnnotSV(outputColHeader)" "^P_[string tolower ${svtype}]_"] eq -1} { continue }
-                    
+                    if {[lsearch -regexp "$g_AnnotSV(outputColHeader)" "^po_P_[string tolower ${svtype}]_"] eq -1} { continue }
+
                     if {[info exists L_po_pathogenic_coord($SVtoAnn,$svtype)]} {
                         if {[info exists L_po_pathogenic_phen($SVtoAnn,$svtype)]} {
                             lappend L_poPathogenicText($SVtoAnn) "[join [lsort -unique $L_po_pathogenic_phen($SVtoAnn,$svtype)] ";"]"
                         } else {
                             lappend L_poPathogenicText($SVtoAnn) ""
                         }
-                        if {[info exists L_poPathogenic_hpo($SVtoAnn,$svtype)]} {
+                        if {[info exists L_po_pathogenic_hpo($SVtoAnn,$svtype)]} {
                             lappend L_poPathogenicText($SVtoAnn) "[join [lsort -unique $L_po_pathogenic_hpo($SVtoAnn,$svtype)] ";"]"
                         } else {
                             lappend L_poPathogenicText($SVtoAnn) ""
