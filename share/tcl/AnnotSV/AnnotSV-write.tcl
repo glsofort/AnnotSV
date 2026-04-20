@@ -44,14 +44,17 @@ proc switchAllCoordinatesFromBEDtoVCFinLine {lineCompleted} {
     set formatedSVstart [expr {$SVstart+1}]
     
     # Formate "AnnotSV_ID"
-    set AnnotSV_ID [lindex $lineCompleted 0]
+    # Split on TAB (not as a Tcl list) so annotation fields containing
+    # unescaped quotes or braces don't break parsing.
+    set _fields [split $lineCompleted "\t"]
+    set AnnotSV_ID [lindex $_fields 0]
     set L_AnnotSV_ID [split $AnnotSV_ID "_"]
     set updated_AnnotSV_ID [lindex $L_AnnotSV_ID 0]_${formatedSVstart}_[lindex $L_AnnotSV_ID 2]_[lindex $L_AnnotSV_ID 3]_[lindex $L_AnnotSV_ID 4]
     set length_AnnotSV_ID [expr {[string length $AnnotSV_ID]-1}]
     set lineCompleted [string replace $lineCompleted 0 $length_AnnotSV_ID $updated_AnnotSV_ID]
     
     # Formate "SV_start"
-    set chrom [lindex $lineCompleted 1]
+    set chrom [lindex $_fields 1]
     set length_chrom [string length $chrom]
     set length_updated_AnnotSV_ID [string length $updated_AnnotSV_ID]
     set lengthTot [expr {$length_updated_AnnotSV_ID+$length_chrom+1}]
