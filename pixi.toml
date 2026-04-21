@@ -1,0 +1,23 @@
+[workspace]
+name = "annotsv-dev"
+description = "Reproducible environment for AnnotSV development and smoke-testing"
+channels = ["conda-forge", "bioconda"]
+platforms = ["osx-arm64", "osx-64", "linux-64"]
+
+[dependencies]
+# conda-forge ships tclsh inside the `tk` package (Tk bundles Tcl 8.6).
+tk = ">=8.6"
+bedtools = "*"
+bcftools = "*"
+htslib = "*"
+python = ">=3.10"
+openjdk = "*"
+
+[tasks]
+annotsv-help = "bin/AnnotSV -help"
+tcl-version  = "bash -c \"tclsh <<< 'puts [info patchlevel]'\""
+# Delegate to bash so 2>&1 and multi-line && work portably.
+deps-check   = { cmd = "bash scripts/deps-check.sh" }
+
+[activation.env]
+ANNOTSV = "$PIXI_PROJECT_ROOT"

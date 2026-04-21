@@ -110,8 +110,13 @@ proc checkPathogenicFiles {} {
     }
     
     # Remove some columns from g_AnnotSV(outputColHeader) if the corresponding annotation file doesn't exist
+    # Pin to the run's active genomeBuild — $genomeBuild and $pathogenicDir from the
+    # outer foreach retain the last iterated value (CHM13), which strips columns for
+    # every user whose bundle lacks CHM13 files.
+    set gb $g_AnnotSV(genomeBuild)
+    set pathogenicDir "$g_AnnotSV(annotationsDir)/Annotations_$g_AnnotSV(organism)/FtIncludedInSV/PathogenicSV/$gb"
     foreach svtype {"Gain" "Loss" "Ins" "Inv"} {
-        set pathogenicFile_Sorted "$pathogenicDir/pathogenic_${svtype}_SV_$genomeBuild.sorted.bed"
+        set pathogenicFile_Sorted "$pathogenicDir/pathogenic_${svtype}_SV_$gb.sorted.bed"
         if {![file exists $pathogenicFile_Sorted]} {
             set newList {}
             foreach e "$g_AnnotSV(outputColHeader)" {
